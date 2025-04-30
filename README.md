@@ -2,6 +2,10 @@
 
 Example `srun` command to get a node with GPU (at UF):
 ```
+srun --qos=avery --account=avery --partition=gpu --gpus=1 --mem=16000 --constraint=a100 --pty bash -i
+```
+Example `srun` command to get a node with CPU (at UF):
+```
 srun -t 600 --qos=avery --account=avery --cpus-per-task=4 --mem-per-cpu=4G --pty bash -i
 ```
 
