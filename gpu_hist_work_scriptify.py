@@ -1,34 +1,26 @@
-
 import time
-
 import awkward as ak
 import cupy as cp
 import numpy as np
-
-from coffea.jitters import hist as gpu_hist
-import hist
-from coffea.jitters import hist
-
-import uproot
-import cudf
-import pyarrow.parquet as pq
-
-from ak_from_cudf import cudf_to_awkward
-
-from coffea.nanoevents.methods import candidate
-
-import fastparquet
-
-from hepconvert import root_to_parquet
-
-import torch
-
 import numba as nb
 
+import torch
+import cudf
+from ak_from_cudf import cudf_to_awkward
 
-print(cudf.__version__)
+import pyarrow.parquet as pq
+import fastparquet
+from hepconvert import root_to_parquet
 
-###########################
+import uproot
+from coffea.jitters import hist as gpu_hist
+import hist
+from coffea.nanoevents.methods import candidate
+
+print("cudf version", cudf.__version__)
+
+#######################################################
+### Test with GPU hist ###
 
 N_dims = 4
 
@@ -38,7 +30,6 @@ test_gpu = ak.Array(cp.random.multivariate_normal(
     size=(200_000_000//N_dims),
 ))
 
-###########################
 
 hist_gpu = gpu_hist.Hist(
     "test", 
@@ -48,12 +39,7 @@ hist_gpu = gpu_hist.Hist(
     gpu_hist.Bin("t", "t coordinate", 32, -5, 5),
 )
 
-
-###########################
-
 hist_gpu.fill(x=test_gpu[:, 0], y=test_gpu[:,1], z=test_gpu[:,2], t=test_gpu[:,3])
-
-###########################
 
 hist_gpu_cupy = cp.histogramdd(
     ak.to_cupy(test_gpu),
@@ -61,11 +47,8 @@ hist_gpu_cupy = cp.histogramdd(
     range=[(-5, 5), (-5, 5), (-5, 5), (-5, 5)]
 )
 
-###########################
-
-
-### Import regular hist here ###
-import hist
+#######################################################
+### Test with regular CPU hist ###
 
 test_cpu = ak.to_backend(test_gpu, "cpu")
 
@@ -79,72 +62,73 @@ hist_gpu.values()[()].get()
 gpu_hist.plot1d(hist_gpu.project("z"))
 
 
-###########################
+#######################################################
+### Q1-Q5 ###
 
-from coffea.jitters import hist
-
+# Some paths
 root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
-#filepath = "/uscms_data/d3/fstrug/temp/Run2012B_SingleMu_compressed_zstd.parquet"
-#filepath = "/uscms_data/d3/fstrug/temp/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-#filepath = "/uscms_data/d3/fstrug/temp/Run2012B_SingleMu_compressed_zstdlv3_Pv2-6_PPv2-0_PLAIN.parquet"
-#filepath = "/uscms_data/d2/lagray/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
 
-# Q1
+### Q1 ###
+
+print("\nStarting Q1 code..")
 
 #MET_pt = ak.to_backend(ak.from_arrow(pq.read_table(filepath, columns=["MET_pt"])["MET_pt"]), "cuda")
 MET_pt = cudf_to_awkward(cudf.read_parquet(filepath, columns = ["MET_pt"])["MET_pt"])
-q1_hist = hist.Hist(
+q1_hist = gpu_hist.Hist(
     "Counts",
-    hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
+    gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
 )
 q1_hist.fill(met=MET_pt)
 
 q1_hist.to_hist().plot1d(flow="none");
 
-###########################
 
-# Q2
+### Q2 ###
+
+print("\nStarting Q2 code..")
 
 #Jet_pt = ak.to_backend(uproot.open("/uscms_data/d2/lagray/Run2012B_SingleMu.root:Events")["Jet_pt"].array(), "cuda")
 #Jet_pt = ak.to_backend(ak.from_arrow(pq.read_table(filepath, columns=["Jet_pt"])["Jet_pt"]), "cuda")
 Jet_pt = cudf_to_awkward(cudf.read_parquet(filepath, columns = ["Jet_pt"])["Jet_pt"])
-q2_hist = hist.Hist(
+q2_hist = gpu_hist.Hist(
     "Counts",
-    hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
+    gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
 )
 q2_hist.fill(ptj=ak.flatten(Jet_pt))
 
 q2_hist.to_hist().plot1d(flow="none");
 
-###########################
 
-# Q3
+### Q3 ###
+
+print("\nStarting Q3 code..")
 
 table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
 Jet_pt = cudf_to_awkward(table["Jet_pt"])
 Jet_eta = cudf_to_awkward(table["Jet_eta"])
 
-q3_hist = hist.Hist(
+q3_hist = gpu_hist.Hist(
     "Counts",
-    hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
+    gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
 )
 q3_hist.fill(ptj=ak.flatten(Jet_pt[abs(Jet_eta) < 1.0]))
 
 q3_hist.to_hist().plot1d(flow="none");
 
-###########################
 
-# Q4
+### Q4 ###
+
+print("\nStarting Q4 code..")
 
 table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
 Jet_pt = cudf_to_awkward(table["Jet_pt"])
 MET_pt = cudf_to_awkward(table["MET_pt"])
 
-q4_hist = hist.Hist(
+q4_hist = gpu_hist.Hist(
     "Counts",
-    hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
+    gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
 )
 has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
 q4_hist.fill(met=MET_pt[has2jets])
@@ -152,9 +136,10 @@ q4_hist.fill(met=MET_pt[has2jets])
 q4_hist.to_hist().plot1d(flow="none");
 
 
-###########################
 
-# Q5
+### Q5 ###
+
+print("\nStarting Q5 code..")
 
 table = cudf.read_parquet(
     filepath, 
@@ -174,9 +159,9 @@ Muon_phi = cudf_to_awkward(table["Muon_phi"])
 Muon_mass = cudf_to_awkward(table["Muon_mass"])
 Muon_charge = cudf_to_awkward(table["Muon_charge"])
 
-q5_hist = hist.Hist(
+q5_hist = gpu_hist.Hist(
     "Counts",
-    hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
+    gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
 )
 
 Muon = ak.zip(
@@ -202,23 +187,18 @@ goodevent = ak.any(
     axis=1,
 )
 
-print("len(MET_pt)",len(MET_pt))
-print("len(goodevent)",len(goodevent))
-print("np.all(goodevent)",np.all(goodevent))
-print("goodevent",goodevent)
-print("MET_pt[goodevent]",MET_pt[goodevent])
-print("MET_pt",MET_pt)
 
-print("MET_pt[goodevent]",MET_pt[goodevent])
 #q5_hist.fill(MET_pt[goodevent])
 q5_hist.fill(met=MET_pt[goodevent])
-print("done filling")
 
 
 q5_hist.to_hist().plot1d(flow="none");
-print("done plot1ding")
 
-###########################
+
+
+
+#######################################################
+### Check combinations ###
 
 jetmet = uproot.open(
     "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
@@ -226,7 +206,7 @@ jetmet = uproot.open(
     ["Jet_pt","MET_pt"],
 )
 
-print("HERE 0")
+print("\n\nRunning the ak combinations stuff")
 print(time.time())
 Jet_pt = ak.to_backend(jetmet.Jet_pt, "cuda")
 #Jet_pt = ak.to_backend(jetmet.Jet_pt, "cpu")
@@ -249,26 +229,27 @@ print("len jet_comb_out",len(jet_comb_out))
 print("type jet_comb_out",type(jet_comb_out))
 
 print("comb part done, moving on.....")
-###########################
 
 
-###########################
 
+#######################################################
+### Write out to parquet ###
 
-print("HERE 2 time.time root_to_parquet")
+print("Starting root_to_parquet")
 root_to_parquet(in_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root",
-                out_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_02.parquet",
-                tree="Events",
-                compression = "zstd",
-                compression_level = 3,
-                extensionarray=False,
-                parquet_version="2.6",
-                parquet_page_version="2.0",
-                parquet_extra_options = {"column_encoding": "PLAIN"}
-               )
+    out_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_03.parquet",
+    tree="Events",
+    compression = "zstd",
+    compression_level = 3,
+    extensionarray=False,
+    parquet_version="2.6",
+    parquet_page_version="2.0",
+    parquet_extra_options = {"column_encoding": "PLAIN"}
+)
 
-###########################
 
+#######################################################
+### Not sure what the stuff in this part is doing ? ###
 
 ak.numba.register_and_check()
 
@@ -304,12 +285,12 @@ values2_cpu = _square(ak.to_backend(values, "cpu"))
 
 print(values2_cpu)
 
-values2 = square_cuda_wrapped(values)
+#values2 = square_cuda_wrapped(values) # Gives errror: "AttributeError: 'CUDATypingContext' object has no attribute 'resolve_argument_type'. Did you mean: 'resolve_value_type'?"
+#print(values2)
 
-print(values2)
 
-print("HERE 4")
-###########################
+
+#########
 
 counts = cp.random.poisson(lam=3, size=5000000)
 flat_values = cp.random.normal(size=int(counts.sum()))
@@ -319,15 +300,15 @@ values = ak.unflatten(flat_values, counts)
 np_vals = np.abs(values)
 print(np_vals, ak.backend(np_vals))
 
-cp_vals = cp.abs(values)
-print(cp_vals, ak.backend(cp_vals))
+#cp_vals = cp.abs(values) # Gives error: "TypeError: Unsupported type <class 'awkward.highlevel.Array'>"
+#print(cp_vals, ak.backend(cp_vals))
 
 values
 
 dir(nb.cuda)
 
-dir(values2)
+#dir(values2)
 
 cp.float32 == np.float32
 
-###########################
+#######################################################
