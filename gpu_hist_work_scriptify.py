@@ -1,22 +1,17 @@
+
 import time
+
 import awkward as ak
 import cupy as cp
 import numpy as np
 
 from coffea.jitters import hist as gpu_hist
-
 import hist
-
-import cudf
-cudf.__version__
+from coffea.jitters import hist
 
 import uproot
-import awkward as ak
-#import cupy as cp
 import cudf
 import pyarrow.parquet as pq
-import numpy as np
-from coffea.jitters import hist
 
 from ak_from_cudf import cudf_to_awkward
 
@@ -28,17 +23,10 @@ from hepconvert import root_to_parquet
 
 import torch
 
-import awkward as ak
-import cupy as cp
 import numba as nb
 
-import awkward as ak
-import cupy as cp
-import numpy as np
 
-import cupy as cp
-import numpy as np
-
+print(cudf.__version__)
 
 ###########################
 
@@ -76,31 +64,20 @@ hist_gpu_cupy = cp.histogramdd(
 ###########################
 
 
-###########################
-###########################
-###########################
+### Import regular hist here ###
 import hist
 
 test_cpu = ak.to_backend(test_gpu, "cpu")
 
-###########################
-
 hist_cpu = hist.new.Reg(32, -5, 5).Reg(32, -5, 5).Reg(32, -5, 5).Reg(32, -5, 5).Weight()
-
-###########################
 
 hist_cpu.fill(test_cpu[:,0], test_cpu[:,1], test_cpu[:,2], test_cpu[:,3])
 
-###########################
-
 hist_gpu.values()[()].get()
-
-###########################
 
 #gpu_hist.plot1d(hist_gpu)
 gpu_hist.plot1d(hist_gpu.project("z"))
 
-###########################
 
 ###########################
 
@@ -145,18 +122,6 @@ q2_hist.to_hist().plot1d(flow="none");
 
 # Q3
 
-#jets = uproot.open(
-#    "/uscms_data/d2/lagray/Run2012B_SingleMu.root:Events"
-#).arrays(
-#    ["Jet_pt","Jet_eta"],
-#)
-#Jet_pt = ak.to_backend(jets.Jet_pt, "cuda")
-#Jet_eta = ak.to_backend(jets.Jet_eta, "cuda")
-
-#table = ak.to_backend(ak.from_arrow(pq.read_table(filepath, columns=["Jet_pt", "Jet_eta"])), "cuda")
-#Jet_pt = table.Jet_pt
-#Jet_eta = table.Jet_eta
-
 table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
 Jet_pt = cudf_to_awkward(table["Jet_pt"])
 Jet_eta = cudf_to_awkward(table["Jet_eta"])
@@ -173,16 +138,6 @@ q3_hist.to_hist().plot1d(flow="none");
 
 # Q4
 
-#jetmet = uproot.open(
-#    "/uscms_data/d2/lagray/Run2012B_SingleMu.root:Events"
-#).arrays(
-#    ["Jet_pt","MET_pt"],
-#)
-
-#table = ak.to_backend(ak.from_arrow(pq.read_table(filepath, columns=["Jet_pt", "MET_pt"])), "cuda")
-#Jet_pt = table.Jet_pt
-#MET_pt = table.MET_pt
-
 table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
 Jet_pt = cudf_to_awkward(table["Jet_pt"])
 MET_pt = cudf_to_awkward(table["MET_pt"])
@@ -196,10 +151,10 @@ q4_hist.fill(met=MET_pt[has2jets])
 
 q4_hist.to_hist().plot1d(flow="none");
 
+
 ###########################
 
 # Q5
-
 
 table = cudf.read_parquet(
     filepath, 
@@ -302,7 +257,7 @@ print("comb part done, moving on.....")
 
 print("HERE 2 time.time root_to_parquet")
 root_to_parquet(in_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root",
-                out_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_01.parquet",
+                out_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_02.parquet",
                 tree="Events",
                 compression = "zstd",
                 compression_level = 3,
@@ -312,7 +267,6 @@ root_to_parquet(in_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu
                 parquet_extra_options = {"column_encoding": "PLAIN"}
                )
 
-print("HERE 3")
 ###########################
 
 
@@ -357,7 +311,6 @@ print(values2)
 print("HERE 4")
 ###########################
 
-
 counts = cp.random.poisson(lam=3, size=5000000)
 flat_values = cp.random.normal(size=int(counts.sum()))
 
@@ -369,24 +322,12 @@ print(np_vals, ak.backend(np_vals))
 cp_vals = cp.abs(values)
 print(cp_vals, ak.backend(cp_vals))
 
-print("HERE 5")
-###########################
-
 values
-
-###########################
 
 dir(nb.cuda)
 
-print("HERE 6")
-###########################
-
 dir(values2)
-
-print("HERE 7")
-###########################
 
 cp.float32 == np.float32
 
-print("HERE 8")
 ###########################
