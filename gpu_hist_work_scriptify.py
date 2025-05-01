@@ -5,6 +5,41 @@ import numpy as np
 
 from coffea.jitters import hist as gpu_hist
 
+import hist
+
+import cudf
+cudf.__version__
+
+import uproot
+import awkward as ak
+#import cupy as cp
+import cudf
+import pyarrow.parquet as pq
+import numpy as np
+from coffea.jitters import hist
+
+from ak_from_cudf import cudf_to_awkward
+
+from coffea.nanoevents.methods import candidate
+
+import fastparquet
+
+from hepconvert import root_to_parquet
+
+import torch
+
+import awkward as ak
+import cupy as cp
+import numba as nb
+
+import awkward as ak
+import cupy as cp
+import numpy as np
+
+import cupy as cp
+import numpy as np
+
+
 ###########################
 
 N_dims = 4
@@ -40,9 +75,11 @@ hist_gpu_cupy = cp.histogramdd(
 
 ###########################
 
-import hist
 
 ###########################
+###########################
+###########################
+import hist
 
 test_cpu = ak.to_backend(test_gpu, "cpu")
 
@@ -65,20 +102,9 @@ gpu_hist.plot1d(hist_gpu.project("z"))
 
 ###########################
 
-import cudf
-cudf.__version__
-
 ###########################
 
-import uproot
-import awkward as ak
-#import cupy as cp
-import cudf
-import pyarrow.parquet as pq
-import numpy as np
 from coffea.jitters import hist
-
-from ak_from_cudf import cudf_to_awkward
 
 root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
 #filepath = "/uscms_data/d3/fstrug/temp/Run2012B_SingleMu_compressed_zstd.parquet"
@@ -87,7 +113,6 @@ root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Even
 #filepath = "/uscms_data/d2/lagray/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
-###########################
 
 # Q1
 
@@ -175,7 +200,6 @@ q4_hist.to_hist().plot1d(flow="none");
 
 # Q5
 
-from coffea.nanoevents.methods import candidate
 
 table = cudf.read_parquet(
     filepath, 
@@ -249,9 +273,9 @@ jetmet = uproot.open(
 
 print("HERE 0")
 print(time.time())
-#Jet_pt = ak.to_backend(jetmet.Jet_pt, "cuda")
-Jet_pt = ak.to_backend(jetmet.Jet_pt, "cpu")
-Jet_pt = Jet_pt[:1000000] # TMP
+Jet_pt = ak.to_backend(jetmet.Jet_pt, "cuda")
+#Jet_pt = ak.to_backend(jetmet.Jet_pt, "cpu")
+Jet_pt = Jet_pt[:100] # TMP
 
 print("len Jet_pt",len(Jet_pt))
 print("type Jet_pt",type(Jet_pt))
@@ -272,15 +296,13 @@ print("type jet_comb_out",type(jet_comb_out))
 print("comb part done, moving on.....")
 ###########################
 
-import fastparquet
 
 ###########################
 
-from hepconvert import root_to_parquet
 
 print("HERE 2 time.time root_to_parquet")
 root_to_parquet(in_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root",
-                out_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_00.parquet",
+                out_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_01.parquet",
                 tree="Events",
                 compression = "zstd",
                 compression_level = 3,
@@ -293,13 +315,6 @@ root_to_parquet(in_file = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu
 print("HERE 3")
 ###########################
 
-import torch
-
-###########################
-
-import awkward as ak
-import cupy as cp
-import numba as nb
 
 ak.numba.register_and_check()
 
@@ -342,9 +357,6 @@ print(values2)
 print("HERE 4")
 ###########################
 
-import awkward as ak
-import cupy as cp
-import numpy as np
 
 counts = cp.random.poisson(lam=3, size=5000000)
 flat_values = cp.random.normal(size=int(counts.sum()))
@@ -373,9 +385,6 @@ dir(values2)
 
 print("HERE 7")
 ###########################
-
-import cupy as cp
-import numpy as np
 
 cp.float32 == np.float32
 
