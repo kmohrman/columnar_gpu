@@ -282,7 +282,8 @@ def query2_cpu(filepath):
 
 
 
-### Q3 query GPU ###
+# Q3 query GPU
+# Fill a hist with pt of jets with eta less than 1
 def query3_gpu(filepath):
 
     print("\nStarting Q3 code on gpu..")
@@ -308,8 +309,34 @@ def query3_gpu(filepath):
     return(t1-t0)
 
 
-### Q4 query GPU ###
+# Q3 query CPU
+# Fill a hist with pt of jets with eta less than 1
+def query3_cpu(filepath):
 
+    print("\nStarting Q3 code on cpu..")
+
+    t0 = time.time()
+    table = df.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
+    Jet_pt = ak.Array(table["Jet_pt"])
+    Jet_eta = ak.Array(table["Jet_eta"])
+
+    q3_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
+    q3_hist.fill(ptj=ak.flatten(Jet_pt[abs(Jet_eta) < 1.0]))
+
+    t1 = time.time()
+
+    # Plotting
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    q3_hist.plot1d(flow="none");
+    fig.savefig("fig_q3_cpu.png")
+
+    print(f"Time for q3: {t1-t0}")
+    return(t1-t0)
+
+
+
+# Q4 query GPU
+# Fill a hist with MET of events that have at least two jets with pt>40
 def query4_gpu(filepath):
 
     print("\nStarting Q4 code on gpu..")
@@ -334,6 +361,32 @@ def query4_gpu(filepath):
 
     print(f"Time for q4: {t1-t0}")
     return(t1-t0)
+
+
+# Q4 query CPU
+# Fill a hist with MET of events that have at least two jets with pt>40
+def query4_cpu(filepath):
+
+    print("\nStarting Q4 code on cpu..")
+
+    t0 = time.time()
+    table = df.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
+    Jet_pt = ak.Array(table["Jet_pt"])
+    MET_pt = ak.Array(table["MET_pt"])
+
+    q4_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
+    q4_hist.fill(met=MET_pt[has2jets])
+    t1 = time.time()
+
+    # Plotting
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    q4_hist.plot1d(flow="none");
+    fig.savefig("fig_q4_cpu.png")
+
+    print(f"Time for q4: {t1-t0}")
+    return(t1-t0)
+
 
 
 
@@ -377,9 +430,9 @@ def query5_gpu(filepath):
         },
         with_name="PtEtaPhiMCandidate",
         behavior=candidate.behavior,
-    #)
+    )
     #)[0:10]
-    )[0:10000]
+    #)[0:10000]
 
 
     mupair = ak.combinations(Muon, 2, fields=["mu1", "mu2"])
@@ -404,6 +457,69 @@ def query5_gpu(filepath):
 
     print(f"Time for q5: {t1-t0}")
     return(t1-t0)
+
+# Q5 query CPU
+# Fill a hist with MET For events that have an OS muon pair with an invariant mass between 60 and 120 GeV
+def query5_cpu(filepath):
+
+    print("\nStarting Q5 code on cpu..")
+
+    t0 = time.time()
+    table = df.read_parquet(
+        filepath,
+        columns = [
+            "MET_pt",
+            "Muon_pt",
+            "Muon_eta",
+            "Muon_phi",
+            "Muon_mass",
+            "Muon_charge",
+        ]
+    )
+    MET_pt      = ak.Array(table["MET_pt"])
+    Muon_pt     = ak.Array(table["Muon_pt"])
+    Muon_eta    = ak.Array(table["Muon_eta"])
+    Muon_phi    = ak.Array(table["Muon_phi"])
+    Muon_mass   = ak.Array(table["Muon_mass"])
+    Muon_charge = ak.Array(table["Muon_charge"])
+
+    q5_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+
+    Muon = ak.zip(
+        {
+            "pt": Muon_pt,
+            "eta": Muon_eta,
+            "phi": Muon_phi,
+            "mass": Muon_mass,
+            "charge": Muon_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    #)
+    #)[0:10]
+    )[0:10000]
+
+    mupair = ak.combinations(Muon, 2, fields=["mu1", "mu2"])
+    pairmass = (mupair.mu1 + mupair.mu2).mass
+    goodevent = ak.any(
+        (pairmass > 60)
+        & (pairmass < 120)
+        & (mupair.mu1.charge == -mupair.mu2.charge),
+        axis=1,
+    )
+
+    q5_hist.fill(met=MET_pt[goodevent])
+    t1 = time.time()
+
+    # Plotting
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    q5_hist.plot1d(flow="none");
+    fig.savefig("fig_q5_cpu.png")
+
+    print(f"Time for q5: {t1-t0}")
+    return(t1-t0)
+
+
 
 
 ####################################################################################################
@@ -473,20 +589,20 @@ def main():
         df = pa.Table.from_batches([first_ten_rows]).to_pandas()
         df.to_parquet("test_pq_100k.parquet")
 
-    #t_q1_gpu = query1_gpu(filepath)
-    #t_q2_gpu = query2_gpu(filepath)
-    #t_q3_gpu = query3_gpu(filepath)
-    #t_q4_gpu = query4_gpu(filepath)
-    #t_q5_gpu = query5_gpu(filepath)
-    #t_q6_gpu = 0
-    #t_q7_gpu = 0
-    #t_q8_gpu = 0
+    t_q1_gpu = query1_gpu(filepath)
+    t_q2_gpu = query2_gpu(filepath)
+    t_q3_gpu = query3_gpu(filepath)
+    t_q4_gpu = query4_gpu(filepath)
+    t_q5_gpu = query5_gpu(filepath)
+    t_q6_gpu = 0
+    t_q7_gpu = 0
+    t_q8_gpu = 0
 
     t_q1_cpu = query1_cpu(filepath)
     t_q2_cpu = query2_cpu(filepath)
-    t_q3_cpu = 0
-    t_q4_cpu = 0
-    t_q5_cpu = 0
+    t_q3_cpu = query3_cpu(filepath)
+    t_q4_cpu = query4_cpu(filepath)
+    t_q5_cpu = query5_cpu(filepath)
     t_q6_cpu = 0
     t_q7_cpu = 0
     t_q8_cpu = 0
