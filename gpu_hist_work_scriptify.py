@@ -18,6 +18,8 @@ from coffea.jitters import hist as gpu_hist
 import hist
 from coffea.nanoevents.methods import candidate
 
+import pandas as df
+
 print("cudf version", cudf.__version__)
 
 
@@ -184,10 +186,11 @@ def check_combinations():
 ####################################################################################################
 ####################################################################################################
 
-### Q1 query GPU ###
+# Q1 query GPU
+# Fill hist with met for all events
 def query1_gpu(filepath):
 
-    print("\nStarting Q1 code..")
+    print("\nStarting Q1 code on gpu..")
 
     # Get met pt and fill hist
     t0 = time.time()
@@ -202,21 +205,44 @@ def query1_gpu(filepath):
     # Plotting
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     q1_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q1.png")
+    fig.savefig("fig_q1_gpu.png")
 
     print(f"Time for q1: {t1-t0}")
     return(t1-t0)
 
 
 
-### Q2 query GPU ###
+# Q1 query CPU
+# Fill hist with met for all events
+def query1_cpu(filepath):
+
+    # Fill hist with met for all events
+    print("\nStarting Q1 code on cpu..")
+
+    # Get met pt and fill hist
+    t0 = time.time()
+    MET_pt = ak.Array(df.read_parquet(filepath, columns = ["MET_pt"])["MET_pt"])
+    q1_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    q1_hist.fill(met=MET_pt)
+    t1 = time.time()
+
+    # Plotting
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    q1_hist.plot1d(flow="none");
+    fig.savefig("fig_q1_cpu.png")
+
+    print(f"Time for q1: {t1-t0}")
+    return(t1-t0)
+
+
+
+# Q2 query GPU
+# Fill hist with pt for all jets
 def query2_gpu(filepath):
 
-    print("\nStarting Q2 code..")
+    print("\nStarting Q2 code on gpu..")
 
     t0 = time.time()
-    #Jet_pt = ak.to_backend(uproot.open("/uscms_data/d2/lagray/Run2012B_SingleMu.root:Events")["Jet_pt"].array(), "cuda")
-    #Jet_pt = ak.to_backend(ak.from_arrow(pq.read_table(filepath, columns=["Jet_pt"])["Jet_pt"]), "cuda")
     Jet_pt = cudf_to_awkward(cudf.read_parquet(filepath, columns = ["Jet_pt"])["Jet_pt"])
     q2_hist = gpu_hist.Hist(
         "Counts",
@@ -228,16 +254,38 @@ def query2_gpu(filepath):
     # Plotting
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     q2_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q2.png")
+    fig.savefig("fig_q2_gpu.png")
 
     print(f"Time for q2: {t1-t0}")
     return(t1-t0)
 
 
+# Q2 query CPU
+# Fill hist with pt for all jets
+def query2_cpu(filepath):
+
+    print("\nStarting Q2 code on cpu..")
+
+    t0 = time.time()
+    Jet_pt = ak.Array(df.read_parquet(filepath, columns = ["Jet_pt"])["Jet_pt"])
+    q2_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
+    q2_hist.fill(ptj=ak.flatten(Jet_pt))
+    t1 = time.time()
+
+    # Plotting
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    q2_hist.plot1d(flow="none");
+    fig.savefig("fig_q2_cpu.png")
+
+    print(f"Time for q2: {t1-t0}")
+    return(t1-t0)
+
+
+
 ### Q3 query GPU ###
 def query3_gpu(filepath):
 
-    print("\nStarting Q3 code..")
+    print("\nStarting Q3 code on gpu..")
 
     t0 = time.time()
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
@@ -254,7 +302,7 @@ def query3_gpu(filepath):
     # Plotting
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     q3_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q3.png")
+    fig.savefig("fig_q3_gpu.png")
 
     print(f"Time for q3: {t1-t0}")
     return(t1-t0)
@@ -264,7 +312,7 @@ def query3_gpu(filepath):
 
 def query4_gpu(filepath):
 
-    print("\nStarting Q4 code..")
+    print("\nStarting Q4 code on gpu..")
 
     t0 = time.time()
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
@@ -282,7 +330,7 @@ def query4_gpu(filepath):
     # Plotting
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     q4_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q4.png")
+    fig.savefig("fig_q4_gpu.png")
 
     print(f"Time for q4: {t1-t0}")
     return(t1-t0)
@@ -293,7 +341,7 @@ def query4_gpu(filepath):
 
 def query5_gpu(filepath):
 
-    print("\nStarting Q5 code..")
+    print("\nStarting Q5 code on gpu..")
 
     t0 = time.time()
     table = cudf.read_parquet(
@@ -352,12 +400,15 @@ def query5_gpu(filepath):
     # Plotting
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     q5_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q5.png")
+    fig.savefig("fig_q5_gpu.png")
 
     print(f"Time for q5: {t1-t0}")
     return(t1-t0)
 
 
+####################################################################################################
+
+# Scatter plot to compare Q times
 def make_scatter_plot(x_arr,y_arr_1,y_arr_2,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test"):
 
     #fig, axs = plt.subplots(nrows=1, ncols=1)
@@ -410,20 +461,40 @@ def main():
     # Benchmark queries
     # https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
-    filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-    t_q1_gpu = query1_gpu(filepath)
-    t_q2_gpu = query2_gpu(filepath)
-    t_q3_gpu = query3_gpu(filepath)
-    t_q4_gpu = query4_gpu(filepath)
-    t_q5_gpu = query5_gpu(filepath)
-    t_q6_gpu = 0
-    t_q7_gpu = 0
-    t_q8_gpu = 0
+    #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
+    filepath = "test_pq_100k.parquet"
+
+    # Dump just the first 100k events into a parquet file
+    if 0:
+        from pyarrow.parquet import ParquetFile
+        import pyarrow as pa
+        pf = ParquetFile(filepath)
+        first_ten_rows = next(pf.iter_batches(batch_size = 100000))
+        df = pa.Table.from_batches([first_ten_rows]).to_pandas()
+        df.to_parquet("test_pq_100k.parquet")
+
+    #t_q1_gpu = query1_gpu(filepath)
+    #t_q2_gpu = query2_gpu(filepath)
+    #t_q3_gpu = query3_gpu(filepath)
+    #t_q4_gpu = query4_gpu(filepath)
+    #t_q5_gpu = query5_gpu(filepath)
+    #t_q6_gpu = 0
+    #t_q7_gpu = 0
+    #t_q8_gpu = 0
+
+    t_q1_cpu = query1_cpu(filepath)
+    t_q2_cpu = query2_cpu(filepath)
+    t_q3_cpu = 0
+    t_q4_cpu = 0
+    t_q5_cpu = 0
+    t_q6_cpu = 0
+    t_q7_cpu = 0
+    t_q8_cpu = 0
 
     # Plot the times for the queries
     x = [1,2,3,4,5,6,7,8]
     y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu]
-    y_cpu = y_gpu
+    y_cpu = [t_q1_cpu, t_q2_cpu, t_q3_cpu, t_q4_cpu, t_q5_cpu, t_q6_cpu, t_q7_cpu, t_q8_cpu]
     make_scatter_plot(x,y_gpu,y_cpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime (s)", tag1="GPU", tag2="CPU",save_name="coffea_adl_benchmarks")
 
 
