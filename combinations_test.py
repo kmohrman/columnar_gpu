@@ -2,6 +2,10 @@ import time
 import uproot
 import awkward as ak
 
+print(ak.__version__)
+
+# wget http://uaf-4.t2.ucsd.edu/~kmohrman/public_html_backup/for_ci/for_wwz/WWZJetsTo4L2Nu_4F_TuneCP5_13TeV-amcatnlo-pythia8__RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2__NANOAODSIM/DA1C387C-8EE5-0D48-9A16-79C0304EC3BC.root
+
 jetmet = uproot.open(
     #"/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     #"root://cmsio2.rc.ufl.edu//cmsuf/data/store/user/t2/users/k.mohrman/test/Run2012B_SingleMu.root:Events"
