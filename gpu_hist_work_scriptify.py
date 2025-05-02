@@ -188,7 +188,7 @@ def check_combinations():
 
 # Q1 query GPU
 # Fill hist with met for all events
-def query1_gpu(filepath):
+def query1_gpu(filepath,makeplot=False):
 
     print("\nStarting Q1 code on gpu..")
 
@@ -203,18 +203,19 @@ def query1_gpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q1_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q1_gpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q1_hist.plot1d(flow="none");
+        fig.savefig("fig_q1_gpu.png")
 
     print(f"Time for q1: {t1-t0}")
-    return(t1-t0)
+    return(q1_hist,t1-t0)
 
 
 
 # Q1 query CPU
 # Fill hist with met for all events
-def query1_cpu(filepath):
+def query1_cpu(filepath,makeplot=False):
 
     # Fill hist with met for all events
     print("\nStarting Q1 code on cpu..")
@@ -227,18 +228,19 @@ def query1_cpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q1_hist.plot1d(flow="none");
-    fig.savefig("fig_q1_cpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q1_hist.plot1d(flow="none");
+        fig.savefig("fig_q1_cpu.png")
 
     print(f"Time for q1: {t1-t0}")
-    return(t1-t0)
+    return(q1_hist,t1-t0)
 
 
 
 # Q2 query GPU
 # Fill hist with pt for all jets
-def query2_gpu(filepath):
+def query2_gpu(filepath,makeplot=False):
 
     print("\nStarting Q2 code on gpu..")
 
@@ -252,17 +254,18 @@ def query2_gpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q2_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q2_gpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q2_hist.to_hist().plot1d(flow="none");
+        fig.savefig("fig_q2_gpu.png")
 
     print(f"Time for q2: {t1-t0}")
-    return(t1-t0)
+    return(q2_hist,t1-t0)
 
 
 # Q2 query CPU
 # Fill hist with pt for all jets
-def query2_cpu(filepath):
+def query2_cpu(filepath,makeplot=False):
 
     print("\nStarting Q2 code on cpu..")
 
@@ -273,18 +276,19 @@ def query2_cpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q2_hist.plot1d(flow="none");
-    fig.savefig("fig_q2_cpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q2_hist.plot1d(flow="none");
+        fig.savefig("fig_q2_cpu.png")
 
     print(f"Time for q2: {t1-t0}")
-    return(t1-t0)
+    return(q2_hist,t1-t0)
 
 
 
 # Q3 query GPU
 # Fill a hist with pt of jets with eta less than 1
-def query3_gpu(filepath):
+def query3_gpu(filepath,makeplot=False):
 
     print("\nStarting Q3 code on gpu..")
 
@@ -301,17 +305,18 @@ def query3_gpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q3_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q3_gpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q3_hist.to_hist().plot1d(flow="none");
+        fig.savefig("fig_q3_gpu.png")
 
     print(f"Time for q3: {t1-t0}")
-    return(t1-t0)
+    return(q3_hist,t1-t0)
 
 
 # Q3 query CPU
 # Fill a hist with pt of jets with eta less than 1
-def query3_cpu(filepath):
+def query3_cpu(filepath,makeplot=False):
 
     print("\nStarting Q3 code on cpu..")
 
@@ -326,18 +331,19 @@ def query3_cpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q3_hist.plot1d(flow="none");
-    fig.savefig("fig_q3_cpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q3_hist.plot1d(flow="none");
+        fig.savefig("fig_q3_cpu.png")
 
     print(f"Time for q3: {t1-t0}")
-    return(t1-t0)
+    return(q3_hist,t1-t0)
 
 
 
 # Q4 query GPU
 # Fill a hist with MET of events that have at least two jets with pt>40
-def query4_gpu(filepath):
+def query4_gpu(filepath,makeplot=False):
 
     print("\nStarting Q4 code on gpu..")
 
@@ -355,17 +361,18 @@ def query4_gpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q4_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q4_gpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q4_hist.to_hist().plot1d(flow="none");
+        fig.savefig("fig_q4_gpu.png")
 
     print(f"Time for q4: {t1-t0}")
-    return(t1-t0)
+    return(q4_hist,t1-t0)
 
 
 # Q4 query CPU
 # Fill a hist with MET of events that have at least two jets with pt>40
-def query4_cpu(filepath):
+def query4_cpu(filepath,makeplot=False):
 
     print("\nStarting Q4 code on cpu..")
 
@@ -380,19 +387,20 @@ def query4_cpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q4_hist.plot1d(flow="none");
-    fig.savefig("fig_q4_cpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q4_hist.plot1d(flow="none");
+        fig.savefig("fig_q4_cpu.png")
 
     print(f"Time for q4: {t1-t0}")
-    return(t1-t0)
+    return(q4_hist,t1-t0)
 
 
 
 
 ### Q5 query GPU ###
 
-def query5_gpu(filepath):
+def query5_gpu(filepath,makeplot=False):
 
     print("\nStarting Q5 code on gpu..")
 
@@ -431,7 +439,6 @@ def query5_gpu(filepath):
         with_name="PtEtaPhiMCandidate",
         behavior=candidate.behavior,
     )
-    #)[0:10]
     #)[0:10000]
 
 
@@ -451,16 +458,17 @@ def query5_gpu(filepath):
 
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q5_hist.to_hist().plot1d(flow="none");
-    fig.savefig("fig_q5_gpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q5_hist.to_hist().plot1d(flow="none");
+        fig.savefig("fig_q5_gpu.png")
 
     print(f"Time for q5: {t1-t0}")
-    return(t1-t0)
+    return(q5_hist,t1-t0)
 
 # Q5 query CPU
 # Fill a hist with MET For events that have an OS muon pair with an invariant mass between 60 and 120 GeV
-def query5_cpu(filepath):
+def query5_cpu(filepath,makeplot=False):
 
     print("\nStarting Q5 code on cpu..")
 
@@ -495,9 +503,8 @@ def query5_cpu(filepath):
         },
         with_name="PtEtaPhiMCandidate",
         behavior=candidate.behavior,
-    #)
-    #)[0:10]
-    )[0:10000]
+    )
+    #)[0:10000]
 
     mupair = ak.combinations(Muon, 2, fields=["mu1", "mu2"])
     pairmass = (mupair.mu1 + mupair.mu2).mass
@@ -512,12 +519,13 @@ def query5_cpu(filepath):
     t1 = time.time()
 
     # Plotting
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    q5_hist.plot1d(flow="none");
-    fig.savefig("fig_q5_cpu.png")
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q5_hist.plot1d(flow="none");
+        fig.savefig("fig_q5_cpu.png")
 
     print(f"Time for q5: {t1-t0}")
-    return(t1-t0)
+    return(q5_hist,t1-t0)
 
 
 
@@ -540,12 +548,12 @@ def make_scatter_plot(x_arr,y_arr_1,y_arr_2,xaxis_name="x",yaxis_name="y",tag1="
     fig.subplots_adjust(hspace=.07)
 
     # Plot the data on main plot
-    ax.scatter(x_arr,y_arr_1,color="b",edgecolors='none',label=tag1,zorder=100)
-    ax.scatter(x_arr,y_arr_2,color="g",edgecolors='none',label=tag2,zorder=100)
+    ax.scatter(x_arr,y_arr_1,color="blue",edgecolors='none',label=tag1,zorder=100)
+    ax.scatter(x_arr,y_arr_2,color="orange",edgecolors='none',label=tag2,zorder=100)
 
     # Plot the ratio on the ratio plot
     r_arr = np.array(y_arr_1)/np.array(y_arr_2)
-    rax.scatter(x_arr,r_arr,color="g",edgecolors='none',zorder=100)
+    rax.scatter(x_arr,r_arr,color="blue",edgecolors='none',zorder=100)
 
     # Set titles and such
     ax.legend(fontsize="12",framealpha=1)
@@ -569,48 +577,88 @@ def make_scatter_plot(x_arr,y_arr_1,y_arr_2,xaxis_name="x",yaxis_name="y",tag1="
 
 def main():
 
+    # Misc tests
     #check_hists()
     #check_combinations()
     #write_to_parquet()
     #lindsey_debugging_numba_cuda()
 
-    # Benchmark queries
+    # File paths
     # https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
     filepath = "test_pq_100k.parquet"
+    #filepath = "test_pq_1M.parquet"
 
-    # Dump just the first 100k events into a parquet file
+    # Dump just the first 100k events from Lindsey's file into a smaller file
     if 0:
         from pyarrow.parquet import ParquetFile
         import pyarrow as pa
         pf = ParquetFile(filepath)
-        first_ten_rows = next(pf.iter_batches(batch_size = 100000))
+        first_ten_rows = next(pf.iter_batches(batch_size = 1000000))
         df = pa.Table.from_batches([first_ten_rows]).to_pandas()
-        df.to_parquet("test_pq_100k.parquet")
+        df.to_parquet("test_pq_1M.parquet")
+        exit()
 
-    t_q1_gpu = query1_gpu(filepath)
-    t_q2_gpu = query2_gpu(filepath)
-    t_q3_gpu = query3_gpu(filepath)
-    t_q4_gpu = query4_gpu(filepath)
-    t_q5_gpu = query5_gpu(filepath)
-    t_q6_gpu = 0
-    t_q7_gpu = 0
-    t_q8_gpu = 0
+    # Run the benchmark queries on GPU
+    hist_q1_gpu, t_q1_gpu = query1_gpu(filepath)
+    hist_q2_gpu, t_q2_gpu = query2_gpu(filepath)
+    hist_q3_gpu, t_q3_gpu = query3_gpu(filepath)
+    hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
+    hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
+    #hist_q6_gpu, t_q6_gpu = 0, None
+    #hist_q7_gpu, t_q7_gpu = 0, None
+    #hist_q8_gpu, t_q8_gpu = 0, None
 
-    t_q1_cpu = query1_cpu(filepath)
-    t_q2_cpu = query2_cpu(filepath)
-    t_q3_cpu = query3_cpu(filepath)
-    t_q4_cpu = query4_cpu(filepath)
-    t_q5_cpu = query5_cpu(filepath)
-    t_q6_cpu = 0
-    t_q7_cpu = 0
-    t_q8_cpu = 0
+    # Run the benchmark queries on CPU
+    hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
+    hist_q2_cpu, t_q2_cpu = query2_cpu(filepath)
+    hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
+    hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
+    hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
+    #hist_q6_cpu, t_q6_cpu = 0, None
+    #hist_q7_cpu, t_q7_cpu = 0, None
+    #hist_q8_cpu, t_q8_cpu = 0, None
+
+    # Plotting the query outputs
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q1_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q1.png")
+
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q2_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q2.png")
+
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q3_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q3_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q3.png")
+
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q4_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q4_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q4.png")
+
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q5_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q5_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q5.png")
+
 
     # Plot the times for the queries
-    x = [1,2,3,4,5,6,7,8]
-    y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu]
-    y_cpu = [t_q1_cpu, t_q2_cpu, t_q3_cpu, t_q4_cpu, t_q5_cpu, t_q6_cpu, t_q7_cpu, t_q8_cpu]
+    #x = [1,2,3,4,5,6,7,8]
+    #y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu]
+    #y_cpu = [t_q1_cpu, t_q2_cpu, t_q3_cpu, t_q4_cpu, t_q5_cpu, t_q6_cpu, t_q7_cpu, t_q8_cpu]
+    x = [1,2,3,4,5]
+    y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu]
+    y_cpu = [t_q1_cpu, t_q2_cpu, t_q3_cpu, t_q4_cpu, t_q5_cpu]
     make_scatter_plot(x,y_gpu,y_cpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime (s)", tag1="GPU", tag2="CPU",save_name="coffea_adl_benchmarks")
 
 
