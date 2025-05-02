@@ -358,6 +358,44 @@ def query5_gpu(filepath):
     return(t1-t0)
 
 
+def make_scatter_plot(x_arr,y_arr_1,y_arr_2,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test"):
+
+    #fig, axs = plt.subplots(nrows=1, ncols=1)
+
+    # Create the figure
+    fig, (ax, rax) = plt.subplots(
+        nrows=2,
+        ncols=1,
+        figsize=(7,7),
+        gridspec_kw={"height_ratios": (3, 1)},
+        sharex=True
+    )
+    fig.subplots_adjust(hspace=.07)
+
+    # Plot the data on main plot
+    ax.scatter(x_arr,y_arr_1,color="b",edgecolors='none',label=tag1,zorder=100)
+    ax.scatter(x_arr,y_arr_2,color="g",edgecolors='none',label=tag2,zorder=100)
+
+    # Plot the ratio on the ratio plot
+    r_arr = np.array(y_arr_1)/np.array(y_arr_2)
+    rax.scatter(x_arr,r_arr,color="g",edgecolors='none',zorder=100)
+
+    # Set titles and such
+    ax.legend(fontsize="12",framealpha=1)
+    ax.set_title(save_name)
+    ax.grid(zorder=-99)
+    rax.grid(zorder=-99)
+    rax.axhline(1.0,linestyle="-",color="k",linewidth=1)
+    #rax.set_ylim(0.0,2.0)
+    rax.set_ylabel(f"{tag1}/{tag2}")
+    rax.set_xlabel(xaxis_name)
+    ax.set_ylabel(yaxis_name)
+
+    plt.savefig(save_name+".png",format="png")
+    #plt.show()
+    return plt
+
+
 
 ####################################################################################################
 
@@ -378,6 +416,16 @@ def main():
     t_q3_gpu = query3_gpu(filepath)
     t_q4_gpu = query4_gpu(filepath)
     t_q5_gpu = query5_gpu(filepath)
+    t_q6_gpu = 0
+    t_q7_gpu = 0
+    t_q8_gpu = 0
+
+    # Plot the times for the queries
+    x = [1,2,3,4,5,6,7,8]
+    y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu]
+    y_cpu = y_gpu
+    make_scatter_plot(x,y_gpu,y_cpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime (s)", tag1="GPU", tag2="CPU",save_name="coffea_adl_benchmarks")
+
 
 
 
