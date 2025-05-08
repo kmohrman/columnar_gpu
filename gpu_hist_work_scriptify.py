@@ -186,6 +186,7 @@ def check_combinations():
 ####################################################################################################
 ####################################################################################################
 
+
 # Q1 query GPU
 # Fill hist with met for all events
 def query1_gpu(filepath,makeplot=False):
@@ -263,6 +264,7 @@ def query2_gpu(filepath,makeplot=False):
     return(q2_hist,t1-t0)
 
 
+
 # Q2 query CPU
 # Fill hist with pt for all jets
 def query2_cpu(filepath,makeplot=False):
@@ -312,6 +314,7 @@ def query3_gpu(filepath,makeplot=False):
 
     print(f"Time for q3: {t1-t0}")
     return(q3_hist,t1-t0)
+
 
 
 # Q3 query CPU
@@ -397,9 +400,8 @@ def query4_cpu(filepath,makeplot=False):
 
 
 
-
-### Q5 query GPU ###
-
+# Q5 query GPU
+# Fill a hist with MET For events that have an OS muon pair with an invariant mass between 60 and 120 GeV
 def query5_gpu(filepath,makeplot=False):
 
     print("\nStarting Q5 code on gpu..")
@@ -451,8 +453,6 @@ def query5_gpu(filepath,makeplot=False):
         axis=1,
     )
 
-
-    #q5_hist.fill(MET_pt[goodevent])
     q5_hist.fill(met=MET_pt[goodevent])
     t1 = time.time()
 
@@ -465,6 +465,8 @@ def query5_gpu(filepath,makeplot=False):
 
     print(f"Time for q5: {t1-t0}")
     return(q5_hist,t1-t0)
+
+
 
 # Q5 query CPU
 # Fill a hist with MET For events that have an OS muon pair with an invariant mass between 60 and 120 GeV
@@ -532,48 +534,6 @@ def query5_cpu(filepath,makeplot=False):
 
 ####################################################################################################
 
-# Scatter plot to compare Q times
-def make_scatter_plot(x_arr,y_arr_1,y_arr_2,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test"):
-
-    #fig, axs = plt.subplots(nrows=1, ncols=1)
-
-    # Create the figure
-    fig, (ax, rax) = plt.subplots(
-        nrows=2,
-        ncols=1,
-        figsize=(7,7),
-        gridspec_kw={"height_ratios": (3, 1)},
-        sharex=True
-    )
-    fig.subplots_adjust(hspace=.07)
-
-    # Plot the data on main plot
-    ax.scatter(x_arr,y_arr_1,color="blue",edgecolors='none',label=tag1,zorder=100)
-    ax.scatter(x_arr,y_arr_2,color="orange",edgecolors='none',label=tag2,zorder=100)
-
-    # Plot the ratio on the ratio plot
-    r_arr = np.array(y_arr_1)/np.array(y_arr_2)
-    rax.scatter(x_arr,r_arr,color="blue",edgecolors='none',zorder=100)
-
-    # Set titles and such
-    ax.legend(fontsize="12",framealpha=1)
-    ax.set_title(save_name)
-    ax.grid(zorder=-99)
-    rax.grid(zorder=-99)
-    rax.axhline(1.0,linestyle="-",color="k",linewidth=1)
-    #rax.set_ylim(0.0,2.0)
-    rax.set_ylabel(f"{tag1}/{tag2}")
-    rax.set_xlabel(xaxis_name)
-    ax.set_ylabel(yaxis_name)
-
-    plt.savefig(save_name+".png",format="png")
-    #plt.show()
-    return plt
-
-
-
-####################################################################################################
-
 
 def main():
 
@@ -585,19 +545,20 @@ def main():
 
     # File paths
     # https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
-    root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
-    #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
+    #root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     filepath = "test_pq_100k.parquet"
     #filepath = "test_pq_1M.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Dump just the first 100k events from Lindsey's file into a smaller file
     if 0:
         from pyarrow.parquet import ParquetFile
         import pyarrow as pa
         pf = ParquetFile(filepath)
-        first_ten_rows = next(pf.iter_batches(batch_size = 1000000))
+        first_ten_rows = next(pf.iter_batches(batch_size = 10000000))
         df = pa.Table.from_batches([first_ten_rows]).to_pandas()
-        df.to_parquet("test_pq_1M.parquet")
+        df.to_parquet("test_pq_10M.parquet")
+        print("Done")
         exit()
 
     # Run the benchmark queries on GPU
@@ -619,6 +580,11 @@ def main():
     #hist_q6_cpu, t_q6_cpu = 0, None
     #hist_q7_cpu, t_q7_cpu = 0, None
     #hist_q8_cpu, t_q8_cpu = 0, None
+
+    # Print the times
+    print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu])
+    print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu])
+    exit()
 
     # Plotting the query outputs
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
@@ -650,17 +616,6 @@ def main():
     hist_q5_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
     fig.savefig("fig_q5.png")
-
-
-    # Plot the times for the queries
-    #x = [1,2,3,4,5,6,7,8]
-    #y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu]
-    #y_cpu = [t_q1_cpu, t_q2_cpu, t_q3_cpu, t_q4_cpu, t_q5_cpu, t_q6_cpu, t_q7_cpu, t_q8_cpu]
-    x = [1,2,3,4,5]
-    y_gpu = [t_q1_gpu, t_q2_gpu, t_q3_gpu, t_q4_gpu, t_q5_gpu]
-    y_cpu = [t_q1_cpu, t_q2_cpu, t_q3_cpu, t_q4_cpu, t_q5_cpu]
-    make_scatter_plot(x,y_gpu,y_cpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime (s)", tag1="GPU", tag2="CPU",save_name="coffea_adl_benchmarks")
-
 
 
 
