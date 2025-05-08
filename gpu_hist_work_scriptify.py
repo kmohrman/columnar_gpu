@@ -531,6 +531,73 @@ def query5_cpu(filepath,makeplot=False):
 
 
 
+# Q6 query CPU
+# Select events at least 3 jets
+#   - Fill hist with pt of tri-jet system closest to top mass
+#   - Fill hist with max b-tag score of the jets in the system
+def query6_cpu(filepath,makeplot=False):
+
+    print("\nStarting Q6 code on cpu..")
+
+    t0 = time.time()
+
+    table = df.read_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
+
+    Jet_pt = ak.Array(table["Jet_pt"])
+    Jet_eta = ak.Array(table["Jet_eta"])
+    Jet_phi = ak.Array(table["Jet_phi"])
+    Jet_mass = ak.Array(table["Jet_mass"])
+    Jet_btag = ak.Array(table["Jet_btag"])
+
+    jets = ak.zip(
+        {
+            "pt": Jet_pt,
+            "eta": Jet_eta,
+            "phi": Jet_phi,
+            "mass": Jet_mass,
+            "btag": Jet_btag,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=candidate.behavior,
+    )
+
+    trijet = ak.combinations(jets, 3, fields=["j1", "j2", "j3"])
+    trijet["p4"] = trijet.j1 + trijet.j2 + trijet.j3
+
+    trijet = ak.flatten(
+        trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
+    )
+
+    maxBtag = np.maximum(
+        trijet.j1.btag,
+        np.maximum(
+            trijet.j2.btag,
+            trijet.j3.btag,
+        ),
+    )
+
+    q6_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
+    q6_hist_1.fill(pt3j=trijet.p4.pt)
+
+    q6_hist_2 = hist.new.Reg(100, 0, 1, name="btag", label="Max jet b-tag score").Double()
+    q6_hist_2.fill(btag=maxBtag)
+
+    t1 = time.time()
+
+    # Plotting
+    if makeplot:
+        # First hist
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q6_hist_1.plot1d(flow="none");
+        fig.savefig("fig_q6p1_cpu.png")
+        # Second hist
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q6_hist_2.plot1d(flow="none");
+        fig.savefig("fig_q6p2_cpu.png")
+
+    return(q6_hist_1,q6_hist_2,t1-t0)
+
+
 
 ####################################################################################################
 
@@ -546,6 +613,7 @@ def main():
     # File paths
     # https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     #root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
+    #filepath = "test_pq_10.parquet"
     filepath = "test_pq_100k.parquet"
     #filepath = "test_pq_1M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
@@ -577,7 +645,7 @@ def main():
     hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
     hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
     hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
-    #hist_q6_cpu, t_q6_cpu = 0, None
+    hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath,makeplot=True)
     #hist_q7_cpu, t_q7_cpu = 0, None
     #hist_q8_cpu, t_q8_cpu = 0, None
 
