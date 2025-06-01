@@ -570,19 +570,13 @@ def query6_gpu_WIP(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = cudf.read_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
-    #table = df.read_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
+    table = df.read_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
 
-    Jet_pt = cudf_to_awkward(table["Jet_pt"])
-    Jet_eta = cudf_to_awkward(table["Jet_eta"])
-    Jet_phi = cudf_to_awkward(table["Jet_phi"])
-    Jet_mass = cudf_to_awkward(table["Jet_mass"])
-    Jet_btag = cudf_to_awkward(table["Jet_btag"])
-    #Jet_pt = ak.Array(table["Jet_pt"])
-    #Jet_eta = ak.Array(table["Jet_eta"])
-    #Jet_phi = ak.Array(table["Jet_phi"])
-    #Jet_mass = ak.Array(table["Jet_mass"])
-    #Jet_btag = ak.Array(table["Jet_btag"])
+    Jet_pt = ak.Array(table["Jet_pt"])
+    Jet_eta = ak.Array(table["Jet_eta"])
+    Jet_phi = ak.Array(table["Jet_phi"])
+    Jet_mass = ak.Array(table["Jet_mass"])
+    Jet_btag = ak.Array(table["Jet_btag"])
 
     jets = ak.zip(
         {
@@ -590,30 +584,20 @@ def query6_gpu_WIP(filepath,makeplot=False):
             "eta": Jet_eta,
             "phi": Jet_phi,
             "mass": Jet_mass,
-            #"btag": Jet_btag,
+            "btag": Jet_btag,
         },
         with_name="PtEtaPhiMLorentzVector",
         behavior=candidate.behavior,
     )
 
     # Get the pt of the trijet system closest to top
-    #trijet = ak.combinations(jets, 3, fields=["j1", "j2", "j3"])
-    trijet = ak.combinations(jets, 2, fields=["j1", "j2"])
-    print(trijet.j1)
-    print(trijet.j2)
-    #print(trijet.j3)
-    print("before")
-    #trijet["p4"] = trijet.j1 + trijet.j2 + trijet.j3
-    trijet["p4"] = trijet.j1 + trijet.j2
-    print("2aftr")
-    exit()
+    trijet = ak.combinations(jets, 3, fields=["j1", "j2", "j3"])
+    trijet["p4"] = trijet.j1 + trijet.j2 + trijet.j3
 
     trijet = ak.flatten(
         trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
     )
 
-    print("done")
-    exit()
     # Get max btag of the trijet system
     maxBtag = np.maximum(
         trijet.j1.btag,
@@ -622,6 +606,8 @@ def query6_gpu_WIP(filepath,makeplot=False):
             trijet.j3.btag,
         ),
     )
+
+    print("maxBtag",len(maxBtag),ak.backend(maxBtag))
 
     q6_hist_1 = gpu_hist.Hist("Counts", gpu_hist.Bin("pt3j", "Trijet $p_{T}$ [GeV]", 100, 0, 200))
     q6_hist_1.fill(pt3j=trijet.p4.pt)
@@ -635,11 +621,11 @@ def query6_gpu_WIP(filepath,makeplot=False):
     if makeplot:
         # First hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q6_hist_1.plot1d(flow="none");
+        q6_hist_1.to_hist().plot1d(flow="none");
         fig.savefig("fig_q6p1_gpu.png")
         # Second hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q6_hist_2.plot1d(flow="none");
+        q6_hist_2.to_hist().plot1d(flow="none");
         fig.savefig("fig_q6p2_gpu.png")
 
     return(q6_hist_1,q6_hist_2,t1-t0)
@@ -691,6 +677,7 @@ def query6_cpu(filepath,makeplot=False):
             trijet.j3.btag,
         ),
     )
+    print("maxBtag",len(maxBtag),ak.backend(maxBtag))
 
     q6_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
     q6_hist_1.fill(pt3j=trijet.p4.pt)
@@ -730,9 +717,9 @@ def main():
     # https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     #root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     #filepath = "test_pq_10.parquet"
-    #filepath = "test_pq_100k.parquet"
+    filepath = "test_pq_100k.parquet"
     #filepath = "test_pq_1M.parquet"
-    filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Dump just the first 100k events from Lindsey's file into a smaller file
     if 0:
@@ -746,29 +733,43 @@ def main():
         exit()
 
     # Run the benchmark queries on GPU
-    hist_q1_gpu, t_q1_gpu = query1_gpu(filepath)
-    hist_q2_gpu, t_q2_gpu = query2_gpu(filepath)
-    hist_q3_gpu, t_q3_gpu = query3_gpu(filepath)
-    hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
-    hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
-    #hist_q6p1_gpu, hist_g6p2_gpu, t_q6_gpu = query6_gpu_WIP(filepath,makeplot=True)
+    #hist_q1_gpu, t_q1_gpu = query1_gpu(filepath)
+    #hist_q2_gpu, t_q2_gpu = query2_gpu(filepath)
+    #hist_q3_gpu, t_q3_gpu = query3_gpu(filepath)
+    #hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
+    #hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
+    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = query6_gpu_WIP(filepath,makeplot=True)
     #hist_q7_gpu, t_q7_gpu = 0, None
     #hist_q8_gpu, t_q8_gpu = 0, None
 
     # Run the benchmark queries on CPU
-    hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
-    hist_q2_cpu, t_q2_cpu = query2_cpu(filepath)
-    hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
-    hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
-    hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
-    #hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath,makeplot=True)
+    #hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
+    #hist_q2_cpu, t_q2_cpu = query2_cpu(filepath)
+    #hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
+    #hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
+    #hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
+    hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath,makeplot=True)
     #hist_q7_cpu, t_q7_cpu = 0, None
     #hist_q8_cpu, t_q8_cpu = 0, None
 
     # Print the times
-    print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu])
-    print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu])
+    print("gpu",[t_q6_gpu])
+    print("cpu",[t_q6_gpu])
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q6p1_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q6p1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q6p1.png")
+
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q6p2_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    hist_q6p2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("fig_q6p2.png")
     exit()
+
+    #print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu])
+    #print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu])
 
     # Plotting the query outputs
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
