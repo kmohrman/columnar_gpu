@@ -746,10 +746,110 @@ def query6_cpu(filepath,makeplot=False):
     return(q6_hist_1,q6_hist_2,t1-t0)
 
 
+# Q7 query GPU
+# Fill hist with HT of jets
+#   - Jets have pt>30 and far (dR>0.4) from leptons
+#   - Leptons have pt>10
+def query7_gpu(filepath,makeplot=False):
+
+    print("\nStarting Q7 code on gpu..")
+
+    t0 = time.time()
+
+    #table = df.read_parquet(filepath, columns = ["Muon_pt", "Electron_pt", "Jet_pt", "Jet_metric_table"])
+    table = cudf.read_parquet(filepath, columns = [
+        "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
+        "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
+        "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
+    ])
+    t_after_read = time.time() # Time
+
+    Jet_pt   = cudf_to_awkward(table["Jet_pt"])
+    Jet_eta  = cudf_to_awkward(table["Jet_eta"])
+    Jet_phi  = cudf_to_awkward(table["Jet_phi"])
+    Jet_mass = cudf_to_awkward(table["Jet_mass"])
+
+    Muon_pt     = cudf_to_awkward(table["Muon_pt"])
+    Muon_eta    = cudf_to_awkward(table["Muon_eta"])
+    Muon_phi    = cudf_to_awkward(table["Muon_phi"])
+    Muon_mass   = cudf_to_awkward(table["Muon_mass"])
+    Muon_charge = cudf_to_awkward(table["Muon_charge"])
+
+    Electron_pt     = cudf_to_awkward(table["Electron_pt"])
+    Electron_eta    = cudf_to_awkward(table["Electron_eta"])
+    Electron_phi    = cudf_to_awkward(table["Electron_phi"])
+    Electron_mass   = cudf_to_awkward(table["Electron_mass"])
+    Electron_charge = cudf_to_awkward(table["Electron_charge"])
+
+    t_after_load = time.time() # Time
+
+    jets = ak.zip(
+        {
+            "pt": Jet_pt,
+            "eta": Jet_eta,
+            "phi": Jet_phi,
+            "mass": Jet_mass,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=candidate.behavior,
+    )
+
+    Electron = ak.zip(
+        {
+            "pt": Electron_pt,
+            "eta": Electron_eta,
+            "phi": Electron_phi,
+            "mass": Electron_mass,
+            "charge": Electron_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    )
+
+    Muon = ak.zip(
+        {
+            "pt": Muon_pt,
+            "eta": Muon_eta,
+            "phi": Muon_phi,
+            "mass": Muon_mass,
+            "charge": Muon_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    )
+
+    # Get good leptons
+    leptons = ak.with_name(ak.concatenate([Electron,Muon],axis=1),'PtEtaPhiMCandidate')
+    leptons_good = leptons[leptons.pt>10]
+
+    # Get good jets and sum pt to get HT
+    jet_nearest_to_any_lep, dr = jets.nearest(leptons,return_metric=True)
+    jets_good = jets[(jets.pt>30) & (dr>0.4)]
+    ht = ak.sum(jets_good.pt,axis=1)
+
+    # Fill hist
+    q7_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("sumjetpt", "Jet $\sum p_{T}$ [GeV]", 100, 0, 200))
+    q7_hist.fill(sumjetpt=ht)
+
+    t1 = time.time()
+
+    # Plotting
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q7_hist.plot1d(flow="none");
+        fig.savefig("fig_q7_cpu.png")
+
+    print(f"Time for q7: {t1-t0}")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
+    print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
+    return(q7_hist,t1-t0)
+
+
 # Q7 query CPU
 # Fill hist with HT of jets
 #   - Jets have pt>30 and far (dR>0.4) from leptons
-#   - Leptons have pt>30
+#   - Leptons have pt>10
 def query7_cpu(filepath,makeplot=False):
 
     print("\nStarting Q7 code on cpu..")
@@ -762,10 +862,88 @@ def query7_cpu(filepath,makeplot=False):
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
     ])
+    t_after_read = time.time() # Time
+
+    Jet_pt   = ak.Array(table["Jet_pt"])
+    Jet_eta  = ak.Array(table["Jet_eta"])
+    Jet_phi  = ak.Array(table["Jet_phi"])
+    Jet_mass = ak.Array(table["Jet_mass"])
+
+    Muon_pt     = ak.Array(table["Muon_pt"])
+    Muon_eta    = ak.Array(table["Muon_eta"])
+    Muon_phi    = ak.Array(table["Muon_phi"])
+    Muon_mass   = ak.Array(table["Muon_mass"])
+    Muon_charge = ak.Array(table["Muon_charge"])
+
+    Electron_pt     = ak.Array(table["Electron_pt"])
+    Electron_eta    = ak.Array(table["Electron_eta"])
+    Electron_phi    = ak.Array(table["Electron_phi"])
+    Electron_mass   = ak.Array(table["Electron_mass"])
+    Electron_charge = ak.Array(table["Electron_charge"])
+
+    t_after_load = time.time() # Time
+
+    jets = ak.zip(
+        {
+            "pt": Jet_pt,
+            "eta": Jet_eta,
+            "phi": Jet_phi,
+            "mass": Jet_mass,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=candidate.behavior,
+    )
+
+    Electron = ak.zip(
+        {
+            "pt": Electron_pt,
+            "eta": Electron_eta,
+            "phi": Electron_phi,
+            "mass": Electron_mass,
+            "charge": Electron_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    )
+
+    Muon = ak.zip(
+        {
+            "pt": Muon_pt,
+            "eta": Muon_eta,
+            "phi": Muon_phi,
+            "mass": Muon_mass,
+            "charge": Muon_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    )
+
+    # Get good leptons
+    leptons = ak.with_name(ak.concatenate([Electron,Muon],axis=1),'PtEtaPhiMCandidate')
+    leptons_good = leptons[leptons.pt>10]
+
+    # Get good jets and sum pt to get HT
+    jet_nearest_to_any_lep, dr = jets.nearest(leptons,return_metric=True)
+    jets_good = jets[(jets.pt>30) & (dr>0.4)]
+    ht = ak.sum(jets_good.pt,axis=1)
+
+    # Fill hist
+    q7_hist = hist.new.Reg(100, 0, 200, name="sumjetpt", label="Jet $\sum p_{T}$ [GeV]").Double()
+    q7_hist.fill(sumjetpt=ht)
 
     t1 = time.time()
 
-    return(None,t1-t0)
+    # Plotting
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q7_hist.plot1d(flow="none");
+        fig.savefig("fig_q7_cpu.png")
+
+    print(f"Time for q7: {t1-t0}")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
+    print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
+    return(q7_hist,t1-t0)
 
 
 ####################################################################################################
@@ -806,9 +984,9 @@ def main():
     hist_q3_gpu, t_q3_gpu = query3_gpu(filepath)
     hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
     hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
-    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
-    #hist_q7_gpu, t_q7_gpu = 0, None
-    #hist_q8_gpu, t_q8_gpu = 0, None
+    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = 0,0,0 #query6_gpu(filepath)
+    hist_q7_gpu, t_q7_gpu = query7_gpu(filepath,makeplot=True)
+    #hist_q8_gpu, t_q8_gpu = 0, 0
 
     # Run the benchmark queries on CPU
     hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
@@ -816,13 +994,16 @@ def main():
     hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
     hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
     hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
-    hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu  = query6_cpu(filepath)
-    #hist_q7_cpu, t_q7_cpu = query7_cpu(filepath)
-    #hist_q8_cpu, t_q8_cpu = 0, None
+    hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
+    hist_q7_cpu, t_q7_cpu = query7_cpu(filepath,makeplot=True)
+    #hist_q8_cpu, t_q8_cpu = 0, 0
+
 
     # Print the times
-    print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu])
-    print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu])
+    #print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu, t_q7_gpu])
+    #print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu, t_q7_cpu])
+
+    exit()
 
     # Plotting the query outputs
 
@@ -861,6 +1042,7 @@ def main():
     ax.legend(fontsize="12",framealpha=1)
     fig.savefig("fig_q5.png")
 
+    '''
     # Q6
 
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
@@ -874,6 +1056,7 @@ def main():
     hist_q6p2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
     fig.savefig("fig_q6p2.png")
+    '''
 
 
 
