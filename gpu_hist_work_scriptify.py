@@ -194,9 +194,15 @@ def query1_gpu(filepath,makeplot=False):
     print("\nStarting Q1 code on gpu..")
 
     # Get met pt and fill hist
+
     t0 = time.time()
-    MET_pt = cudf_to_awkward(cudf.read_parquet(filepath, columns = ["MET_pt"])["MET_pt"])
-    t_after_load = time.time()
+
+    table = cudf.read_parquet(filepath, columns = ["MET_pt"])
+    t_after_read = time.time() # Time
+
+    MET_pt = cudf_to_awkward(table["MET_pt"])
+    t_after_load = time.time() # Time
+
     q1_hist = gpu_hist.Hist(
         "Counts",
         gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
@@ -211,7 +217,8 @@ def query1_gpu(filepath,makeplot=False):
         fig.savefig("fig_q1_gpu.png")
 
     print(f"Time for q1: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q1_hist,t1-t0)
 
@@ -225,9 +232,15 @@ def query1_cpu(filepath,makeplot=False):
     print("\nStarting Q1 code on cpu..")
 
     # Get met pt and fill hist
+
     t0 = time.time()
-    MET_pt = ak.Array(df.read_parquet(filepath, columns = ["MET_pt"])["MET_pt"])
-    t_after_load = time.time()
+
+    table = df.read_parquet(filepath, columns = ["MET_pt"])
+    t_after_read = time.time() # Time
+
+    MET_pt = ak.Array(table["MET_pt"])
+    t_after_load = time.time() # Time
+
     q1_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
     q1_hist.fill(met=MET_pt)
     t1 = time.time()
@@ -239,7 +252,8 @@ def query1_cpu(filepath,makeplot=False):
         fig.savefig("fig_q1_cpu.png")
 
     print(f"Time for q1: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q1_hist,t1-t0)
 
@@ -252,8 +266,13 @@ def query2_gpu(filepath,makeplot=False):
     print("\nStarting Q2 code on gpu..")
 
     t0 = time.time()
-    Jet_pt = cudf_to_awkward(cudf.read_parquet(filepath, columns = ["Jet_pt"])["Jet_pt"])
-    t_after_load = time.time()
+
+    table = cudf.read_parquet(filepath, columns = ["Jet_pt"])
+    t_after_read = time.time() # Time
+
+    Jet_pt = cudf_to_awkward(table["Jet_pt"])
+    t_after_load = time.time() # Time
+
     q2_hist = gpu_hist.Hist(
         "Counts",
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
@@ -268,7 +287,8 @@ def query2_gpu(filepath,makeplot=False):
         fig.savefig("fig_q2_gpu.png")
 
     print(f"Time for q2: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q2_hist,t1-t0)
 
@@ -281,8 +301,13 @@ def query2_cpu(filepath,makeplot=False):
     print("\nStarting Q2 code on cpu..")
 
     t0 = time.time()
-    Jet_pt = ak.Array(df.read_parquet(filepath, columns = ["Jet_pt"])["Jet_pt"])
-    t_after_load = time.time()
+
+    table = df.read_parquet(filepath, columns = ["Jet_pt"])
+    t_after_read = time.time() # Time
+
+    Jet_pt = ak.Array(table["Jet_pt"])
+    t_after_load = time.time() # Time
+
     q2_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
     q2_hist.fill(ptj=ak.flatten(Jet_pt))
     t1 = time.time()
@@ -294,7 +319,8 @@ def query2_cpu(filepath,makeplot=False):
         fig.savefig("fig_q2_cpu.png")
 
     print(f"Time for q2: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q2_hist,t1-t0)
 
@@ -307,10 +333,13 @@ def query3_gpu(filepath,makeplot=False):
     print("\nStarting Q3 code on gpu..")
 
     t0 = time.time()
+
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
+    t_after_read = time.time() # Time
+
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     Jet_eta = cudf_to_awkward(table["Jet_eta"])
-    t_after_load = time.time()
+    t_after_load = time.time() # Time
 
     q3_hist = gpu_hist.Hist(
         "Counts",
@@ -326,7 +355,8 @@ def query3_gpu(filepath,makeplot=False):
         fig.savefig("fig_q3_gpu.png")
 
     print(f"Time for q3: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q3_hist,t1-t0)
 
@@ -339,10 +369,13 @@ def query3_cpu(filepath,makeplot=False):
     print("\nStarting Q3 code on cpu..")
 
     t0 = time.time()
+
     table = df.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
+    t_after_read = time.time() # Time
+
     Jet_pt = ak.Array(table["Jet_pt"])
     Jet_eta = ak.Array(table["Jet_eta"])
-    t_after_load = time.time()
+    t_after_load = time.time() # Time
 
     q3_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
     q3_hist.fill(ptj=ak.flatten(Jet_pt[abs(Jet_eta) < 1.0]))
@@ -356,7 +389,8 @@ def query3_cpu(filepath,makeplot=False):
         fig.savefig("fig_q3_cpu.png")
 
     print(f"Time for q3: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q3_hist,t1-t0)
 
@@ -370,9 +404,11 @@ def query4_gpu(filepath,makeplot=False):
 
     t0 = time.time()
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
+    t_after_read = time.time() # Time
+
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     MET_pt = cudf_to_awkward(table["MET_pt"])
-    t_after_load = time.time()
+    t_after_load = time.time() # Time
 
     q4_hist = gpu_hist.Hist(
         "Counts",
@@ -389,7 +425,8 @@ def query4_gpu(filepath,makeplot=False):
         fig.savefig("fig_q4_gpu.png")
 
     print(f"Time for q4: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q4_hist,t1-t0)
 
@@ -401,14 +438,18 @@ def query4_cpu(filepath,makeplot=False):
     print("\nStarting Q4 code on cpu..")
 
     t0 = time.time()
+
     table = df.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
+    t_after_read = time.time() # Time
+
     Jet_pt = ak.Array(table["Jet_pt"])
     MET_pt = ak.Array(table["MET_pt"])
-    t_after_load = time.time()
+    t_after_load = time.time() # Time
 
     q4_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
     has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
     q4_hist.fill(met=MET_pt[has2jets])
+
     t1 = time.time()
 
     # Plotting
@@ -418,7 +459,8 @@ def query4_cpu(filepath,makeplot=False):
         fig.savefig("fig_q4_cpu.png")
 
     print(f"Time for q4: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q4_hist,t1-t0)
 
@@ -442,13 +484,15 @@ def query5_gpu(filepath,makeplot=False):
             "Muon_charge",
         ]
     )
+    t_after_read = time.time() # Time
+
     MET_pt = cudf_to_awkward(table["MET_pt"])
     Muon_pt = cudf_to_awkward(table["Muon_pt"])
     Muon_eta = cudf_to_awkward(table["Muon_eta"])
     Muon_phi = cudf_to_awkward(table["Muon_phi"])
     Muon_mass = cudf_to_awkward(table["Muon_mass"])
     Muon_charge = cudf_to_awkward(table["Muon_charge"])
-    t_after_load = time.time()
+    t_after_load = time.time() # Time
 
     q5_hist = gpu_hist.Hist(
         "Counts",
@@ -489,7 +533,8 @@ def query5_gpu(filepath,makeplot=False):
         fig.savefig("fig_q5_gpu.png")
 
     print(f"Time for q5: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q5_hist,t1-t0)
 
@@ -513,13 +558,15 @@ def query5_cpu(filepath,makeplot=False):
             "Muon_charge",
         ]
     )
+    t_after_read = time.time() # Time
+
     MET_pt      = ak.Array(table["MET_pt"])
     Muon_pt     = ak.Array(table["Muon_pt"])
     Muon_eta    = ak.Array(table["Muon_eta"])
     Muon_phi    = ak.Array(table["Muon_phi"])
     Muon_mass   = ak.Array(table["Muon_mass"])
     Muon_charge = ak.Array(table["Muon_charge"])
-    t_after_load = time.time()
+    t_after_load = time.time() # Time
 
     q5_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
 
@@ -555,7 +602,8 @@ def query5_cpu(filepath,makeplot=False):
         fig.savefig("fig_q5_cpu.png")
 
     print(f"Time for q5: {t1-t0}")
-    print(f"    Time for loading: {t_after_load-t0} ({np.round(100*(t_after_load-t0)/(t1-t0),1)}%)")
+    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t1-t0),1)}%)")
+    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q5_hist,t1-t0)
 
@@ -698,6 +746,27 @@ def query6_cpu(filepath,makeplot=False):
     return(q6_hist_1,q6_hist_2,t1-t0)
 
 
+# Q7 query CPU
+# Fill hist with HT of jets
+#   - Jets have pt>30 and far (dR>0.4) from leptons
+#   - Leptons have pt>30
+def query7_cpu(filepath,makeplot=False):
+
+    print("\nStarting Q7 code on cpu..")
+
+    t0 = time.time()
+
+    #table = df.read_parquet(filepath, columns = ["Muon_pt", "Electron_pt", "Jet_pt", "Jet_metric_table"])
+    table = df.read_parquet(filepath, columns = [
+        "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
+        "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
+        "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
+    ])
+
+    t1 = time.time()
+
+    return(None,t1-t0)
+
 
 ####################################################################################################
 
@@ -748,7 +817,7 @@ def main():
     hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
     hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
     hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu  = query6_cpu(filepath)
-    #hist_q7_cpu, t_q7_cpu = 0, None
+    #hist_q7_cpu, t_q7_cpu = query7_cpu(filepath)
     #hist_q8_cpu, t_q8_cpu = 0, None
 
     # Print the times
