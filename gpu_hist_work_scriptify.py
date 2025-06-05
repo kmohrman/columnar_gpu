@@ -17,6 +17,7 @@ import uproot
 from coffea.jitters import hist as gpu_hist
 import hist
 from coffea.nanoevents.methods import candidate
+from coffea.nanoevents.methods import vector
 
 import pandas as df
 
@@ -828,7 +829,7 @@ def query7_gpu(filepath,makeplot=False):
     ht = ak.sum(jets_good.pt,axis=1)
 
     # Fill hist
-    q7_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("sumjetpt", "Jet $\sum p_{T}$ [GeV]", 100, 0, 200))
+    q7_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("sumjetpt", "Scalar sum of jet $p_{T}$ [GeV]", 100, 0, 200))
     q7_hist.fill(sumjetpt=ht)
 
     t1 = time.time()
@@ -928,7 +929,7 @@ def query7_cpu(filepath,makeplot=False):
     ht = ak.sum(jets_good.pt,axis=1)
 
     # Fill hist
-    q7_hist = hist.new.Reg(100, 0, 200, name="sumjetpt", label="Jet $\sum p_{T}$ [GeV]").Double()
+    q7_hist = hist.new.Reg(100, 0, 200, name="sumjetpt", label="Scalar sum of jet $p_{T}$ [GeV]").Double()
     q7_hist.fill(sumjetpt=ht)
 
     t1 = time.time()
@@ -944,6 +945,131 @@ def query7_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t1-t0),1)}%)")
     print(f"    Time for computing and histing: {t1-t_after_load} ({np.round(100*(t1-t_after_load)/(t1-t0),1)}%)")
     return(q7_hist,t1-t0)
+
+
+# Q8 query CPU
+# Select events with at least 3 leptons, that inlude a SFOS pair
+# Plot MT of the system of the leading non-Z lepton and MET
+def query8_cpu(filepath,makeplot=False):
+
+    print("\nStarting Q8 code on cpu..")
+
+    t0 = time.time()
+
+    #table = df.read_parquet(filepath, columns = ["Muon_pt", "Electron_pt", "Jet_pt", "Jet_metric_table"])
+    table = df.read_parquet(filepath, columns = [
+        "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
+        "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
+        "MET_pt", "MET_phi",
+    ])
+    t_after_read = time.time() # Time
+
+    Muon_pt     = ak.Array(table["Muon_pt"])
+    Muon_eta    = ak.Array(table["Muon_eta"])
+    Muon_phi    = ak.Array(table["Muon_phi"])
+    Muon_mass   = ak.Array(table["Muon_mass"])
+    Muon_charge = ak.Array(table["Muon_charge"])
+
+    Electron_pt     = ak.Array(table["Electron_pt"])
+    Electron_eta    = ak.Array(table["Electron_eta"])
+    Electron_phi    = ak.Array(table["Electron_phi"])
+    Electron_mass   = ak.Array(table["Electron_mass"])
+    Electron_charge = ak.Array(table["Electron_charge"])
+
+    MET_pt = ak.Array(table["MET_pt"])
+    MET_phi = ak.Array(table["MET_phi"])
+
+    t_after_load = time.time() # Time
+
+    MET = ak.zip(
+        {
+            "pt": MET_pt,
+            "phi": MET_phi,
+        },
+        with_name="PolarTwoVector",
+        behavior=vector.behavior,
+    )
+
+    Electron = ak.zip(
+        {
+            "pt": Electron_pt,
+            "eta": Electron_eta,
+            "phi": Electron_phi,
+            "mass": Electron_mass,
+            "charge": Electron_charge,
+            "pdgId": -11 * Electron_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    )
+
+    Muon = ak.zip(
+        {
+            "pt": Muon_pt,
+            "eta": Muon_eta,
+            "phi": Muon_phi,
+            "mass": Muon_mass,
+            "charge": Muon_charge,
+            "pdgId": -13 * Muon_charge,
+        },
+        with_name="PtEtaPhiMCandidate",
+        behavior=candidate.behavior,
+    )
+
+    # Get good leptons
+    leptons = ak.with_name(ak.concatenate([Electron,Muon],axis=1),'PtEtaPhiMCandidate')
+    leptons = leptons[leptons.pt>10]
+
+    # Attatch index to each lepton
+    leptons['idx'] = ak.local_index(leptons, axis=1)
+
+    # Get pairs of leptons
+    ll_pairs = ak.combinations(leptons, 2, fields=["l0","l1"])
+    ll_pairs_idx = ak.argcombinations(leptons, 2, fields=["l0","l1"])
+
+    # Get distance from Z
+    dist_from_z_all_pairs = abs((ll_pairs.l0+ll_pairs.l1).mass - 91.2)
+
+    # Mask out the pairs that are not SFOS (so that we don't include them when finding the one that's closest to Z)
+    # And then of the SFOS pairs, get the index of the one that's cosest to the Z
+    sfos_mask = (ll_pairs.l0.pdgId == -ll_pairs.l1.pdgId)
+    dist_from_z_sfos_pairs = ak.mask(dist_from_z_all_pairs,sfos_mask)
+    sfos_pair_closest_to_z_idx = ak.argmin(dist_from_z_sfos_pairs,axis=-1,keepdims=True)
+
+    # Build a mask (of the shape of the original lep array) corresponding to the leps that are part of the Z candidate
+    mask_is_z_lep = (leptons.idx == ak.flatten(ll_pairs_idx.l0[sfos_pair_closest_to_z_idx]))
+    mask_is_z_lep = (mask_is_z_lep | (leptons.idx == ak.flatten(ll_pairs_idx.l1[sfos_pair_closest_to_z_idx])))
+    mask_is_z_lep = ak.fill_none(mask_is_z_lep, False)
+
+    # Get ahold of the leading non-Z lepton
+    leps_not_from_z_candidate = leptons[~mask_is_z_lep]
+    lead_lep_not_from_z_candidate = leps_not_from_z_candidate[ak.argmax(leps_not_from_z_candidate.pt, axis=1, keepdims=True)]
+    lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
+
+    # Get the MT
+    print("met phi",MET.phi)
+    print("l3 phi",lead_lep_not_from_z_candidate.phi)
+    print("d phi",MET.delta_phi(lead_lep_not_from_z_candidate))
+    mt = np.sqrt(2 * lead_lep_not_from_z_candidate.pt * MET_pt * (1 - np.cos(MET.delta_phi(lead_lep_not_from_z_candidate))))
+
+    # Apply 3l SFOS selection
+    has_3l = ak.num(leptons) >=3
+    has_sfos = ak.any(sfos_mask,axis=1)
+    mt = mt[has_3l & has_sfos]
+
+    # Fill hist
+    q8_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="$\ell$-MET transverse mass [GeV]").Double()
+    q8_hist.fill(mt_lep_met=mt)
+
+    t1 = time.time()
+
+    # Plotting
+    if makeplot:
+        fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        q8_hist.plot1d(flow="none");
+        fig.savefig("fig_q8_cpu.png")
+
+    return(q8_hist,t1-t0)
 
 
 ####################################################################################################
@@ -963,8 +1089,8 @@ def main():
     #filepath = "test_pq_10.parquet"
     #filepath = "test_pq_100.parquet"
     #filepath = "test_pq_1k.parquet"
-    filepath = "test_pq_100k.parquet"
-    #filepath = "test_pq_1M.parquet"
+    #filepath = "test_pq_100k.parquet"
+    filepath = "test_pq_1M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Dump just the first 100k events from Lindsey's file into a smaller file
@@ -986,7 +1112,7 @@ def main():
     hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
     hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = 0,0,0 #query6_gpu(filepath)
     hist_q7_gpu, t_q7_gpu = query7_gpu(filepath,makeplot=True)
-    #hist_q8_gpu, t_q8_gpu = 0, 0
+    hist_q8_gpu, t_q8_gpu = 0, 0
 
     # Run the benchmark queries on CPU
     hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
@@ -996,12 +1122,12 @@ def main():
     hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
     hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
     hist_q7_cpu, t_q7_cpu = query7_cpu(filepath,makeplot=True)
-    #hist_q8_cpu, t_q8_cpu = 0, 0
+    hist_q8_cpu, t_q8_cpu = query8_cpu(filepath,makeplot=True)
 
 
     # Print the times
-    #print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu, t_q7_gpu])
-    #print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu, t_q7_cpu])
+    print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu])
+    print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu, t_q7_cpu, t_q8_cpu])
 
     exit()
 
