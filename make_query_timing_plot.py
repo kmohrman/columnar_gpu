@@ -2,19 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Scatter plot to compare Q times
-def make_scatter_plot(x_arr,y_arr_1_lst,y_arr_2_lst,log=False,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test"):
+def make_scatter_plot(x_arr,y_arr_1_lst,y_arr_2_lst,log=False,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test",nevents=None):
 
     #fig, axs = plt.subplots(nrows=1, ncols=1)
 
     # Create the figure
-    fig, (ax, rax) = plt.subplots(
-        nrows=2,
+    fig, (ax, rax, rrax) = plt.subplots(
+        nrows=3,
         ncols=1,
         figsize=(7,7),
-        gridspec_kw={"height_ratios": (3, 1)},
+        gridspec_kw={"height_ratios": (1, 1, 1)},
         sharex=True
     )
-    fig.subplots_adjust(hspace=.07)
+    fig.subplots_adjust(hspace=.09)
 
     # Loop over the sets of events and plot them
     for i in range(len(y_arr_1_lst)):
@@ -27,27 +27,38 @@ def make_scatter_plot(x_arr,y_arr_1_lst,y_arr_2_lst,log=False,xaxis_name="x",yax
             ax.scatter(x_arr,y_arr_1_lst[i],color="orange",edgecolors='none',zorder=100)
             ax.scatter(x_arr,y_arr_2_lst[i],color="blue",edgecolors='none',zorder=100)
 
+        # Plot events/s in kHz
+        rax.scatter(x_arr,nevents/(1000*np.array(y_arr_1_lst[i])),color="orange",edgecolors='none',zorder=100)
+        rax.scatter(x_arr,nevents/(1000*np.array(y_arr_2_lst[i])),color="blue",edgecolors='none',zorder=100)
+
         # Plot the ratio on the ratio plot
         r_arr = np.array(y_arr_1_lst[i])/np.array(y_arr_2_lst[i])
-        rax.scatter(x_arr,r_arr,color="orange",edgecolors='none',zorder=100)
+        rrax.scatter(x_arr,r_arr,color="orange",edgecolors='none',zorder=100)
 
     # Set log scale
     if log:
         ax.set_yscale('log')
+        rax.set_yscale('log')
         save_name = save_name+"_log"
 
     # Set titles and such
     ax.set_ylabel(yaxis_name)
+    rax.set_ylabel(f"Events/s [kHz]")
     ax.legend(fontsize="12",framealpha=1)
     ax.set_title(save_name)
     ax.grid(zorder=-99)
     rax.grid(zorder=-99)
-    rax.axhline(1.0,linestyle="-",color="k",linewidth=1)
-    #rax.set_ylim(0.0,2.0)
-    rax.set_ylabel(f"{tag1}/{tag2}")
-    rax.set_xlabel(xaxis_name)
+    rrax.grid(zorder=-99)
+    rrax.axhline(1.0,linestyle="-",color="k",linewidth=1)
+    #rrax.set_ylim(0.0,2.0)
+    rrax.set_ylabel(f"{tag1}/{tag2}")
+    rrax.set_xlabel(xaxis_name)
 
-    #rax.yaxis.set_major_locator(5)
+    ax.set_ylim(0.1,10e4)
+    rax.set_ylim(1,10e5)
+    rrax.set_ylim(-100,1050)
+
+    #rrax.yaxis.set_major_locator(5)
     #plt.yticks(5)
     plt.locator_params(axis="y", nbins=5) 
 
@@ -65,8 +76,8 @@ def main():
     # Full run
     y_gpu = [[31.389608144760132, 3.022132158279419, 17.002512454986572, 0.9368855953216553, 2991.8851997852325]]
     y_cpu = [[16.73035740852356, 915.8247015476227, 1816.7914366722107, 886.7176096439362, 2366.1546704769135]]
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents53446198",log=False)
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents53446198",log=True)
+    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents53446198",log=False,nevents=53446198)
+    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents53446198",log=True,nevents=53446198)
 
     # 100k events
     y_gpu = [
@@ -79,8 +90,8 @@ def main():
         [0.4499659538269043, 1.4361202716827393, 2.7690248489379883, 1.3557918071746826, 15.998578786849976],
         [0.611318826675415, 1.4838826656341553, 2.8346333503723145, 1.4293062686920166, 4.631955862045288],
     ]
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents100k",log=False)
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents100k",log=True)
+    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents100k",log=False,nevents=100000)
+    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents100k",log=True,nevents=100000)
 
     # 1M events
     y_gpu = [
@@ -94,8 +105,8 @@ def main():
         [1.4182829856872559, 16.802221298217773, 34.37035870552063, 17.264073371887207, 43.65031099319458],
         [1.095402717590332, 17.175547122955322, 34.54497003555298, 17.08597159385681, 43.89459705352783],
     ]
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents1M",log=False)
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents1M",log=True)
+    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents1M",log=False,nevents=1e6)
+    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents1M",log=True,nevents=1e6)
 
 
 
