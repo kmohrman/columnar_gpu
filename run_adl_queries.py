@@ -519,12 +519,14 @@ def query6_gpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass", "Jet_btag",])
+    t_after_read = time.time() # Time
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     Jet_eta = cudf_to_awkward(table["Jet_eta"])
     Jet_phi = cudf_to_awkward(table["Jet_phi"])
     Jet_mass = cudf_to_awkward(table["Jet_mass"])
     Jet_btag = cudf_to_awkward(table["Jet_btag"])
+    t_after_load = time.time() # Time
 
     jets = ak.zip(
         {
@@ -574,7 +576,17 @@ def query6_gpu(filepath,makeplot=False):
         q6_hist_2.to_hist().plot1d(flow="none");
         fig.savefig("fig_q6p2_gpu.png")
 
-    return(q6_hist_1,q6_hist_2,t_after_fill-t0)
+    # Timing information
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_fill = t_after_fill-t_after_load
+    dt_tot        = t_after_fill-t0
+    print(f"Time for q6: {dt_tot}")
+    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+
+    return(q6_hist_1, q6_hist_2, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q6 query CPU
@@ -588,12 +600,14 @@ def query6_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = df.read_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
+    t_after_read = time.time() # Time
 
     Jet_pt = ak.Array(table["Jet_pt"])
     Jet_eta = ak.Array(table["Jet_eta"])
     Jet_phi = ak.Array(table["Jet_phi"])
     Jet_mass = ak.Array(table["Jet_mass"])
     Jet_btag = ak.Array(table["Jet_btag"])
+    t_after_load = time.time() # Time
 
     jets = ak.zip(
         {
@@ -643,7 +657,17 @@ def query6_cpu(filepath,makeplot=False):
         q6_hist_2.plot1d(flow="none");
         fig.savefig("fig_q6p2_cpu.png")
 
-    return(q6_hist_1,q6_hist_2,t_after_fill-t0)
+    # Timing information
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_fill = t_after_fill-t_after_load
+    dt_tot        = t_after_fill-t0
+    print(f"Time for q6: {dt_tot}")
+    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+
+    return(q6_hist_1, q6_hist_2, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q7 query GPU
@@ -738,11 +762,17 @@ def query7_gpu(filepath,makeplot=False):
         q7_hist.plot1d(flow="none");
         fig.savefig("fig_q7_cpu.png")
 
-    print(f"Time for q7: {t_after_fill-t0}")
-    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t_after_fill-t0),1)}%)")
-    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t_after_fill-t0),1)}%)")
-    print(f"    Time for computing and histing: {t_after_fill-t_after_load} ({np.round(100*(t_after_fill-t_after_load)/(t_after_fill-t0),1)}%)")
-    return(q7_hist,t_after_fill-t0)
+    # Timing information
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_fill = t_after_fill-t_after_load
+    dt_tot        = t_after_fill-t0
+    print(f"Time for q7: {dt_tot}")
+    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+
+    return(q7_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q7 query CPU
@@ -837,11 +867,17 @@ def query7_cpu(filepath,makeplot=False):
         q7_hist.plot1d(flow="none");
         fig.savefig("fig_q7_cpu.png")
 
-    print(f"Time for q7: {t_after_fill-t0}")
-    print(f"    Time for reading: {t_after_read-t0} ({np.round(100*(t_after_read-t0)/(t_after_fill-t0),1)}%)")
-    print(f"    Time for loading: {t_after_load-t_after_read} ({np.round(100*(t_after_load-t_after_read)/(t_after_fill-t0),1)}%)")
-    print(f"    Time for computing and histing: {t_after_fill-t_after_load} ({np.round(100*(t_after_fill-t_after_load)/(t_after_fill-t0),1)}%)")
-    return(q7_hist,t_after_fill-t0)
+    # Timing information
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_fill = t_after_fill-t_after_load
+    dt_tot        = t_after_fill-t0
+    print(f"Time for q7: {dt_tot}")
+    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+
+    return(q7_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q8 query GPU
@@ -962,7 +998,17 @@ def query8_gpu(filepath,makeplot=False):
         q8_hist.plot1d(flow="none");
         fig.savefig("fig_q8_gpu.png")
 
-    return(q8_hist,t_after_fill-t0)
+    # Timing information
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_fill = t_after_fill-t_after_load
+    dt_tot        = t_after_fill-t0
+    print(f"Time for q8: {dt_tot}")
+    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+
+    return(q8_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q8 query CPU
@@ -1083,7 +1129,17 @@ def query8_cpu(filepath,makeplot=False):
         q8_hist.plot1d(flow="none");
         fig.savefig("fig_q8_cpu.png")
 
-    return(q8_hist,t_after_fill-t0)
+    # Timing information
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_fill = t_after_fill-t_after_load
+    dt_tot        = t_after_fill-t0
+    print(f"Time for q8: {dt_tot}")
+    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+
+    return(q8_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -1185,6 +1241,7 @@ def main():
     fig.savefig("fig_q5.png")
 
     '''
+    # WIP
     # Q6
 
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
