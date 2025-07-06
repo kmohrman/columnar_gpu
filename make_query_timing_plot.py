@@ -71,47 +71,56 @@ def make_scatter_plot(x_arr,y_arr_1_lst,y_arr_2_lst,log=False,xaxis_name="x",yax
 
 def main():
 
-    x = [1,2,3,4,5]
 
-    # Full run
-    y_gpu = [[31.389608144760132, 3.022132158279419, 17.002512454986572, 0.9368855953216553, 2991.8851997852325]]
-    y_cpu = [[16.73035740852356, 915.8247015476227, 1816.7914366722107, 886.7176096439362, 2366.1546704769135]]
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents53446198",log=False,nevents=53446198)
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents53446198",log=True,nevents=53446198)
+    # Dict to keep track of the order of the dt time values printed in the timing array
+    # The structure of the np array is like:
+    # np.array([
+    #    [read,load,fill,total times for query 1],
+    #    [read,load,fill,total times for query 2], 
+    #    ...
+    # ]
+    time_lables_dict = {
+        0 : "read",
+        1 : "load",
+        2 : "fill",
+        3 : "total",
+    }
 
-    # 100k events
-    y_gpu = [
-        [24.451767206192017, 0.5169780254364014, 10.540595531463623, 0.10236239433288574, 11.251887321472168],
-        [22.06326937675476, 0.39934349060058594, 10.627521514892578, 0.10174894332885742, 5.711676120758057],
-        [23.687761545181274, 4.677731513977051, 9.980894327163696, 0.15544724464416504, 6.260521173477173],
-    ]
-    y_cpu = [
-        [0.5371420383453369, 1.417785882949829, 2.8521766662597656, 1.4171738624572754, 4.656379222869873],
-        [0.4499659538269043, 1.4361202716827393, 2.7690248489379883, 1.3557918071746826, 15.998578786849976],
-        [0.611318826675415, 1.4838826656341553, 2.8346333503723145, 1.4293062686920166, 4.631955862045288],
-    ]
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents100k",log=False,nevents=100000)
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents100k",log=True,nevents=100000)
+    # Queries (for x axis)
+    x = [1,2,3,4,5] #,6,7,8]
 
-    # 1M events
-    y_gpu = [
-        [24.593621730804443, 0.4054069519042969, 11.33007550239563, 0.32595205307006836, 56.92887783050537],
-        [23.62338161468506, 0.6453971862792969, 10.756298303604126, 0.21704339981079102, 57.37603712081909],
-        [19.454494953155518, 0.6683943271636963, 9.630228042602539, 0.25890207290649414, 59.6738817691803],
-    ]
-
-    y_cpu = [
-        [1.2984192371368408, 17.31274437904358, 34.383469104766846, 17.065198183059692, 43.43406653404236],
-        [1.4182829856872559, 16.802221298217773, 34.37035870552063, 17.264073371887207, 43.65031099319458],
-        [1.095402717590332, 17.175547122955322, 34.54497003555298, 17.08597159385681, 43.89459705352783],
-    ]
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents1M",log=False,nevents=1e6)
-    make_scatter_plot(x,y_cpu,y_gpu,xaxis_name="Benchmark Queries",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name="coffea_adl_benchmarks_nEvents1M",log=True,nevents=1e6)
-
-
-
-
-
+    # Timing numbers
+    timing_dict = {
+        "100k" : {
+            "nevents" : 100000,
+            "y_gpu_arr" : np.array([
+                [[3.3297441005706787, 0.0032701492309570312, 0.07311630249023438, 3.40613055229187], [0.027616500854492188, 0.0021648406982421875, 0.00394892692565918, 0.033730268478393555], [0.02391195297241211, 0.001107931137084961, 3.2167067527770996, 3.2417266368865967], [0.023516416549682617, 0.0008764266967773438, 0.00836944580078125, 0.03276228904724121], [0.018593311309814453, 0.0017905235290527344, 0.1057736873626709, 0.12615752220153809]],
+            ]),
+            "y_cpu_arr" : np.array([
+                [[0.0048258304595947266, 0.005120038986206055, 0.00060272216796875, 0.010548591613769531], [0.020740509033203125, 0.7300634384155273, 0.0010578632354736328, 0.7518618106842041], [0.03613471984863281, 1.4210612773895264, 0.005944490432739258, 1.4631404876708984], [0.019855260848999023, 0.7361855506896973, 0.0033833980560302734, 0.7594242095947266], [0.07020807266235352, 2.184292793273926, 0.022810697555541992, 2.2773115634918213]],
+            ]),
+        },
+        "1M" : {
+            "nevents" : 1e6,
+            "y_gpu_arr" : np.array([
+            ]),
+            "y_cpu_arr" : np.array([
+            ]),
+        },
+        "53M" : {
+            "nevents" : 53446198,
+            "y_gpu_arr" : np.array([
+            ]),
+            "y_cpu_arr" : np.array([
+            ]),
+        },
+    }
+    cat_to_plot = "100k"
+    for dt_category_idx,dt_category_label in time_lables_dict.items():
+        nevts = timing_dict[cat_to_plot]["nevents"]
+        y_gpu = timing_dict[cat_to_plot]["y_gpu_arr"][:,:,dt_category_idx]
+        y_cpu = timing_dict[cat_to_plot]["y_cpu_arr"][:,:,dt_category_idx]
+        make_scatter_plot(x,y_cpu,y_gpu,xaxis_name=f"Benchmark Queries ({dt_category_label})",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name=f"adl_benchmarks_nEvents{cat_to_plot}_{dt_category_label}",log=False,nevents=nevts)
 
 
 main()
