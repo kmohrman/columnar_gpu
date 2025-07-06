@@ -1098,8 +1098,8 @@ def main():
     #filepath = "test_pq_10.parquet"
     #filepath = "test_pq_100.parquet"
     #filepath = "test_pq_1k.parquet"
-    #filepath = "test_pq_100k.parquet"
-    filepath = "test_pq_1M.parquet"
+    filepath = "test_pq_100k.parquet"
+    #filepath = "test_pq_1M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Dump just the first 100k events from Lindsey's file into a smaller file
@@ -1108,10 +1108,17 @@ def main():
         import pyarrow as pa
         pf = ParquetFile(filepath)
         first_ten_rows = next(pf.iter_batches(batch_size = 10000000))
-        df = pa.Table.from_batches([first_ten_rows]).to_pandas()
-        df.to_parquet("test_pq_10M.parquet")
+        rows_df = pa.Table.from_batches([first_ten_rows]).to_pandas()
+        rows_df.to_parquet("test_pq_10M.parquet")
         print("Done")
         exit()
+
+    # Print the number of events we are running over
+    nevents = len(df.read_parquet(filepath, columns = ["MET_pt"]))
+    print(f"\nNumber of nevents to be processed: {nevents}")
+
+    # Placeholder timing array for the not yet implemented queries
+    zeros = [0,0,0,0]
 
     # Run the benchmark queries on GPU
     hist_q1_gpu, t_q1_gpu = query1_gpu(filepath)
@@ -1119,9 +1126,9 @@ def main():
     hist_q3_gpu, t_q3_gpu = query3_gpu(filepath)
     hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
     hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
-    #hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
-    #hist_q7_gpu, t_q7_gpu = query7_gpu(filepath,makeplot=True)
-    #hist_q8_gpu, t_q8_gpu = query8_gpu(filepath,makeplot=True)
+    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = None, None, zeros #query6_gpu(filepath)
+    hist_q7_gpu, t_q7_gpu = None, zeros #query7_gpu(filepath,makeplot=True)
+    hist_q8_gpu, t_q8_gpu = None, zeros #query8_gpu(filepath,makeplot=True)
 
     # Run the benchmark queries on CPU
     hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
@@ -1129,15 +1136,15 @@ def main():
     hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
     hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
     hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
-    #hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
-    #hist_q7_cpu, t_q7_cpu = query7_cpu(filepath,makeplot=True)
-    #hist_q8_cpu, t_q8_cpu = query8_cpu(filepath,makeplot=True)
+    hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
+    hist_q7_cpu, t_q7_cpu = query7_cpu(filepath,makeplot=True)
+    hist_q8_cpu, t_q8_cpu = query8_cpu(filepath,makeplot=True)
 
-    # Print the times
-    #print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu, t_q7_gpu, t_q8_gpu])
-    #print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu, t_q7_cpu, t_q8_cpu])
-    print("gpu",[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu])
-    print("cpu",[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu])
+    # Print the times in a way we can easily paste as the plotting inputs
+    print(f"\nFor nevents {nevents}")
+    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu,t_q7_gpu,t_q8_gpu]},")
+    print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
+    exit()
 
 
     # Plotting the query outputs
