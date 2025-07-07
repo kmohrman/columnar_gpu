@@ -1,8 +1,9 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Scatter plot to compare Q times
-def make_scatter_plot(xarr,yarr_1_lst,yarr_2_lst,log=False,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test",nevents=None,sub_len_x=None):
+def make_scatter_plot(xarr_1,xarr_2,yarr_1_lst,yarr_2_lst,log=False,xaxis_name="x",yaxis_name="y",tag1="set1",tag2="set2",save_name="test",nevents=None):
 
     #fig, axs = plt.subplots(nrows=1, ncols=1)
 
@@ -17,23 +18,25 @@ def make_scatter_plot(xarr,yarr_1_lst,yarr_2_lst,log=False,xaxis_name="x",yaxis_
     fig.subplots_adjust(hspace=.09)
 
     # Loop over the sets of events and plot them
+    if len(yarr_1_lst) != len(yarr_2_lst): raise Exception("Number of sets of points to plot do not agree between cpu and gpu")
     for i in range(len(yarr_1_lst)):
         print(f"Plotting for set {i}...")
         # Plot the data on main plot
         if i==0:
-            ax1.scatter(xarr,yarr_1_lst[i],color="orange",edgecolors='none',label=tag1,zorder=100)
-            ax1.scatter(xarr,yarr_2_lst[i],color="blue",edgecolors='none',label=tag2,zorder=100)
+            ax1.scatter(xarr_1,yarr_1_lst[i],color="orange",edgecolors='none',label=tag1,zorder=100)
+            ax1.scatter(xarr_2,yarr_2_lst[i],color="blue",edgecolors='none',label=tag2,zorder=100)
         else:
-            ax1.scatter(xarr,yarr_1_lst[i],color="orange",edgecolors='none',zorder=100)
-            ax1.scatter(xarr,yarr_2_lst[i],color="blue",edgecolors='none',zorder=100)
+            ax1.scatter(xarr_1,yarr_1_lst[i],color="orange",edgecolors='none',zorder=100)
+            ax1.scatter(xarr_2,yarr_2_lst[i],color="blue",edgecolors='none',zorder=100)
 
         # Plot events/s in kHz
-        ax2.scatter(xarr,nevents/(1000*np.array(yarr_1_lst[i])),color="orange",edgecolors='none',zorder=100)
-        ax2.scatter(xarr,nevents/(1000*np.array(yarr_2_lst[i])),color="blue",edgecolors='none',zorder=100)
+        ax2.scatter(xarr_1,nevents/(1000*np.array(yarr_1_lst[i])),color="orange",edgecolors='none',zorder=100)
+        ax2.scatter(xarr_2,nevents/(1000*np.array(yarr_2_lst[i])),color="blue",edgecolors='none',zorder=100)
 
         # Plot the ratio on the ratio plot
-        r_arr = np.array(yarr_1_lst[i][:sub_len_x])/np.array(yarr_2_lst[i][:sub_len_x])
-        ax3.scatter(xarr[:sub_len_x],r_arr,color="orange",edgecolors='none',zorder=100)
+        min_len_x = min(len(xarr_1),len(xarr_2))
+        r_arr = np.array(yarr_1_lst[i][:min_len_x])/np.array(yarr_2_lst[i][:min_len_x])
+        ax3.scatter(xarr_1[:min_len_x],r_arr,color="orange",edgecolors='none',zorder=100)
 
     # Set log scale
     if log:
@@ -62,7 +65,7 @@ def make_scatter_plot(xarr,yarr_1_lst,yarr_2_lst,log=False,xaxis_name="x",yaxis_
     plt.locator_params(axis="y", nbins=5) 
 
 
-    plt.savefig(save_name+".png",format="png")
+    plt.savefig(os.path.join(f"plots/{save_name}.png"),format="png")
     #plt.show()
     return plt
 
@@ -88,19 +91,23 @@ def main():
     # Queries (for x axis)
     x_gpu = [1,2,3,4,5]
     x_cpu = [1,2,3,4,5,6,7,8]
-    x     = [1,2,3,4,5,6,7,8]
 
     # Timing numbers
     timing_dict = {
+
+        # Run 100k, about 3m
         "100k" : {
             "nevents" : 100000,
             "y_gpu_arr" : np.array([
-                [[1.6387996673583984, 0.003034830093383789, 0.0665884017944336, 1.7084228992462158], [0.026049137115478516, 0.0014963150024414062, 0.0031707286834716797, 0.0307161808013916], [0.022825002670288086, 0.0007688999176025391, 3.0250017642974854, 3.048595666885376], [0.02307581901550293, 0.0006453990936279297, 0.0075185298919677734, 0.031239748001098633], [0.013154983520507812, 0.0015950202941894531, 0.09278297424316406, 0.10753297805786133], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                # Not first run
+                [[5.945056676864624, 0.004033088684082031, 0.1805863380432129, 6.129676103591919], [0.047772884368896484, 0.0027849674224853516, 0.0065402984619140625, 0.0570981502532959], [0.032845258712768555, 0.001909017562866211, 10.34265422821045, 10.377408504486084], [0.032349348068237305, 0.0013751983642578125, 0.015073537826538086, 0.0487980842590332], [0.02304673194885254, 0.00416874885559082, 0.2514491081237793, 0.27866458892822266]],
             ]),
             "y_cpu_arr" : np.array([
-                [[0.004276752471923828, 0.004875898361206055, 0.0005404949188232422, 0.009693145751953125], [0.01968693733215332, 0.7190582752227783, 0.0009844303131103516, 0.739729642868042], [0.03493309020996094, 1.496469259262085, 0.00546574592590332, 1.5368680953979492], [0.019341707229614258, 0.741987943649292, 0.0030748844146728516, 0.7644045352935791], [0.06572484970092773, 2.2517147064208984, 0.017827987670898438, 2.3352675437927246], [0.07760357856750488, 3.7023203372955322, 0.4688701629638672, 4.248794078826904], [0.19384026527404785, 6.081218481063843, 0.061873435974121094, 6.336932182312012], [0.13547539710998535, 3.0686004161834717, 0.07102584838867188, 3.275101661682129]],
+                # Not first run
+                [[0.015338420867919922, 0.037996768951416016, 0.0020720958709716797, 0.05540728569030762], [0.10113024711608887, 4.460193634033203, 0.0042035579681396484, 4.565527439117432], [0.1836705207824707, 8.920819997787476, 0.01326608657836914, 9.117756605148315], [0.10673952102661133, 4.499321937561035, 0.006756782531738281, 4.612818241119385], [0.4088881015777588, 13.262264728546143, 0.07317900657653809, 13.74433183670044], [0.4390749931335449, 22.393534421920776, 1.777578353881836, 24.610187768936157], [1.1567962169647217, 35.6050009727478, 0.21976232528686523, 36.98155951499939], [0.7942583560943604, 17.86157202720642, 0.23632144927978516, 18.892151832580566]],
             ]),
         },
+
         "1M" : {
             "nevents" : 1e6,
             "y_gpu_arr" : np.array([
@@ -108,20 +115,37 @@ def main():
             "y_cpu_arr" : np.array([
             ]),
         },
-        "53M" : {
-            "nevents" : 53446198,
+
+        "10M" : {
+            "nevents" : 1e6,
             "y_gpu_arr" : np.array([
             ]),
             "y_cpu_arr" : np.array([
             ]),
         },
+
+        # Never run to full completion on CPU, many hours
+        "53M" : {
+            "nevents" : 53446198,
+            "y_gpu_arr" : np.array([
+                ## Not sure if first run or not
+                ##[[5.880941867828369, 0.0177614688873291, 10.41261911392212, 16.311322450637817],[2.496755599975586, 0.005660295486450195, 0.17136716842651367, 2.67378306388855],[3.2397615909576416, 0.0070765018463134766, 7.817948341369629, 11.064786434173584],[0.4555375576019287, 0.0029714107513427734, 0.09490132331848145, 0.5534102916717529],[14.84013319015503, 0.0187835693359375, 2.7588915824890137, 17.61780834197998]]
+            ]),
+            "y_cpu_arr" : np.array([
+                ## Not sure if first run or not
+                ## Note: Needed 512000 mem for q6, q8 did not finish (and a retry of q7 ran for way longer than this number)
+                ##[[0.4074842929840088, 2.301905393600464, 0.2707850933074951, 2.9801747798919678],[8.869683980941772, 461.466509103775, 0.40516066551208496, 470.7413537502289],[18.56472420692444, 912.3368966579437, 3.023542642593384, 933.9251635074615],[9.68858814239502, 451.86974906921387, 0.9235742092132568, 462.48191142082214],[36.50802683830261, 1172.8312983512878, 6.587008476257324, 1215.9263336658478],[57.896148920059204, 2327.27223277092, 26049.023535728455, 28434.191917419434],[129.4102804660797, 3296.884009361267, 754.1636970043182, 4180.457986831665], []]
+            ]),
+        },
     }
+
+    # Make the plots
     cat_to_plot = "100k"
     for dt_category_idx,dt_category_label in time_lables_dict.items():
         nevts = timing_dict[cat_to_plot]["nevents"]
         y_gpu = timing_dict[cat_to_plot]["y_gpu_arr"][:,:,dt_category_idx]
         y_cpu = timing_dict[cat_to_plot]["y_cpu_arr"][:,:,dt_category_idx]
-        make_scatter_plot(x,y_cpu,y_gpu,xaxis_name=f"Benchmark Queries ({dt_category_label})",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name=f"adl_benchmarks_nEvents{cat_to_plot}_{dt_category_label}",log=False,nevents=nevts,sub_len_x=5)
+        make_scatter_plot(x_cpu,x_gpu,y_cpu,y_gpu,xaxis_name=f"Benchmark Queries ({dt_category_label})",yaxis_name="Runtime [s]", tag1="CPU", tag2="GPU",save_name=f"adl_benchmarks_nEvents{cat_to_plot}_{dt_category_label}",log=False,nevents=nevts)
 
 
 main()

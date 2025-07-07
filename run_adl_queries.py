@@ -54,7 +54,7 @@ def query1_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q1_hist.plot1d(flow="none");
-        fig.savefig("fig_q1_gpu.png")
+        fig.savefig("plots/fig_q1_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -95,7 +95,7 @@ def query1_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q1_hist.plot1d(flow="none");
-        fig.savefig("fig_q1_cpu.png")
+        fig.savefig("plots/fig_q1_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -136,7 +136,7 @@ def query2_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q2_hist.to_hist().plot1d(flow="none");
-        fig.savefig("fig_q2_gpu.png")
+        fig.savefig("plots/fig_q2_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -174,7 +174,7 @@ def query2_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q2_hist.plot1d(flow="none");
-        fig.savefig("fig_q2_cpu.png")
+        fig.savefig("plots/fig_q2_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -216,7 +216,7 @@ def query3_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q3_hist.to_hist().plot1d(flow="none");
-        fig.savefig("fig_q3_gpu.png")
+        fig.savefig("plots/fig_q3_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -256,7 +256,7 @@ def query3_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q3_hist.plot1d(flow="none");
-        fig.savefig("fig_q3_cpu.png")
+        fig.savefig("plots/fig_q3_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -298,7 +298,7 @@ def query4_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q4_hist.to_hist().plot1d(flow="none");
-        fig.savefig("fig_q4_gpu.png")
+        fig.savefig("plots/fig_q4_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -338,7 +338,7 @@ def query4_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q4_hist.plot1d(flow="none");
-        fig.savefig("fig_q4_cpu.png")
+        fig.savefig("plots/fig_q4_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -418,7 +418,7 @@ def query5_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q5_hist.to_hist().plot1d(flow="none");
-        fig.savefig("fig_q5_gpu.png")
+        fig.savefig("plots/fig_q5_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -493,7 +493,7 @@ def query5_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q5_hist.plot1d(flow="none");
-        fig.savefig("fig_q5_cpu.png")
+        fig.savefig("plots/fig_q5_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -570,11 +570,11 @@ def query6_gpu(filepath,makeplot=False):
         # First hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q6_hist_1.to_hist().plot1d(flow="none");
-        fig.savefig("fig_q6p1_gpu.png")
+        fig.savefig("plots/fig_q6p1_gpu.png")
         # Second hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q6_hist_2.to_hist().plot1d(flow="none");
-        fig.savefig("fig_q6p2_gpu.png")
+        fig.savefig("plots/fig_q6p2_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -651,11 +651,11 @@ def query6_cpu(filepath,makeplot=False):
         # First hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q6_hist_1.plot1d(flow="none");
-        fig.savefig("fig_q6p1_cpu.png")
+        fig.savefig("plots/fig_q6p1_cpu.png")
         # Second hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q6_hist_2.plot1d(flow="none");
-        fig.savefig("fig_q6p2_cpu.png")
+        fig.savefig("plots/fig_q6p2_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -760,7 +760,7 @@ def query7_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q7_hist.plot1d(flow="none");
-        fig.savefig("fig_q7_cpu.png")
+        fig.savefig("plots/fig_q7_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -865,7 +865,7 @@ def query7_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q7_hist.plot1d(flow="none");
-        fig.savefig("fig_q7_cpu.png")
+        fig.savefig("plots/fig_q7_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -987,7 +987,7 @@ def query8_gpu(filepath,makeplot=False):
     mt = mt[has_3l & has_sfos]
 
     # Fill hist
-    q8_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "$\ell$-MET transverse mass [GeV]", 100, 0, 200))
+    q8_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 100, 0, 200))
     q8_hist.fill(mt_lep_met=mt)
 
     t_after_fill = time.time()
@@ -996,7 +996,7 @@ def query8_gpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q8_hist.plot1d(flow="none");
-        fig.savefig("fig_q8_gpu.png")
+        fig.savefig("plots/fig_q8_gpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -1118,7 +1118,7 @@ def query8_cpu(filepath,makeplot=False):
     mt = mt[has_3l & has_sfos]
 
     # Fill hist
-    q8_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="$\ell$-MET transverse mass [GeV]").Double()
+    q8_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
     q8_hist.fill(mt_lep_met=mt)
 
     t_after_fill = time.time()
@@ -1127,7 +1127,7 @@ def query8_cpu(filepath,makeplot=False):
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
         q8_hist.plot1d(flow="none");
-        fig.savefig("fig_q8_cpu.png")
+        fig.savefig("plots/fig_q8_cpu.png")
 
     # Timing information
     dt_after_read = t_after_read-t0
@@ -1149,25 +1149,13 @@ def query8_cpu(filepath,makeplot=False):
 def main():
 
     # File paths
-    # https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
-    #root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
-    #filepath = "test_pq_10.parquet"
-    #filepath = "test_pq_100.parquet"
-    #filepath = "test_pq_1k.parquet"
-    filepath = "test_pq_100k.parquet"
-    #filepath = "test_pq_1M.parquet"
-    #filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-
-    # Dump just the first 100k events from Lindsey's file into a smaller file
-    if 0:
-        from pyarrow.parquet import ParquetFile
-        import pyarrow as pa
-        pf = ParquetFile(filepath)
-        first_ten_rows = next(pf.iter_batches(batch_size = 10000000))
-        rows_df = pa.Table.from_batches([first_ten_rows]).to_pandas()
-        rows_df.to_parquet("test_pq_10M.parquet")
-        print("Done")
-        exit()
+    ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
+    ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
+    ##filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
+    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Print the number of events we are running over
     nevents = len(df.read_parquet(filepath, columns = ["MET_pt"]))
@@ -1183,8 +1171,8 @@ def main():
     hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
     hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
     hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = None, None, zeros #query6_gpu(filepath)
-    hist_q7_gpu, t_q7_gpu = None, zeros #query7_gpu(filepath,makeplot=True)
-    hist_q8_gpu, t_q8_gpu = None, zeros #query8_gpu(filepath,makeplot=True)
+    hist_q7_gpu, t_q7_gpu = None, zeros                        #query7_gpu(filepath)
+    hist_q8_gpu, t_q8_gpu = None, zeros                        #query8_gpu(filepath)
 
     # Run the benchmark queries on CPU
     hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
@@ -1193,69 +1181,82 @@ def main():
     hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
     hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
     hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
-    hist_q7_cpu, t_q7_cpu = query7_cpu(filepath,makeplot=True)
-    hist_q8_cpu, t_q8_cpu = query8_cpu(filepath,makeplot=True)
+    hist_q7_cpu, t_q7_cpu = query7_cpu(filepath)
+    hist_q8_cpu, t_q8_cpu = query8_cpu(filepath)
 
     # Print the times in a way we can easily paste as the plotting inputs
-    print(f"\nFor nevents {nevents}")
-    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu, t_q6_gpu,t_q7_gpu,t_q8_gpu]},")
+    print(f"\nTiming info for this run over {nevents} events:")
+    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,                           ]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
-    exit()
-
+    #exit()
 
     # Plotting the query outputs
+    print("Making plots...")
 
     # Q1
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q1_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
     hist_q1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q1.png")
+    fig.savefig("plots/fig_q1.png")
 
     # Q2
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q2_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
     hist_q2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q2.png")
+    fig.savefig("plots/fig_q2.png")
 
     # Q3
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q3_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
     hist_q3_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q3.png")
+    fig.savefig("plots/fig_q3.png")
 
     # Q4
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q4_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
     hist_q4_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q4.png")
+    fig.savefig("plots/fig_q4.png")
 
     # Q5
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q5_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
     hist_q5_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q5.png")
+    fig.savefig("plots/fig_q5.png")
 
-    '''
-    # WIP
     # Q6
 
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q6p1_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q6p1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    #hist_q6p1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q6p1.png")
+    fig.savefig("plots/fig_q6p1.png")
 
     fig, ax = plt.subplots(1, 1, figsize=(7,7))
     hist_q6p2_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q6p2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    #hist_q6p2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
     ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("fig_q6p2.png")
-    '''
+    fig.savefig("plots/fig_q6p2.png")
+
+    # Q7
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q7_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    #hist_q7_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("plots/fig_q7.png")
+
+    # Q7
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+    hist_q8_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
+    #hist_q8_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
+    ax.legend(fontsize="12",framealpha=1)
+    fig.savefig("plots/fig_q8.png")
+
+    print("Done")
 
 
 
