@@ -35,12 +35,17 @@ def query1_gpu(filepath,makeplot=False):
 
     # Get met pt and fill hist
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["MET_pt"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     MET_pt = cudf_to_awkward(table["MET_pt"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     q1_hist = gpu_hist.Hist(
@@ -48,6 +53,8 @@ def query1_gpu(filepath,makeplot=False):
         gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
     )
     q1_hist.fill(met=MET_pt)
+
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -117,12 +124,17 @@ def query2_gpu(filepath,makeplot=False):
 
     print("\nStarting Q2 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     q2_hist = gpu_hist.Hist(
@@ -130,6 +142,8 @@ def query2_gpu(filepath,makeplot=False):
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
     )
     q2_hist.fill(ptj=ak.flatten(Jet_pt))
+
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -196,13 +210,18 @@ def query3_gpu(filepath,makeplot=False):
 
     print("\nStarting Q3 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     Jet_eta = cudf_to_awkward(table["Jet_eta"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     q3_hist = gpu_hist.Hist(
@@ -210,6 +229,8 @@ def query3_gpu(filepath,makeplot=False):
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
     )
     q3_hist.fill(ptj=ak.flatten(Jet_pt[abs(Jet_eta) < 1.0]))
+
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -278,12 +299,18 @@ def query4_gpu(filepath,makeplot=False):
 
     print("\nStarting Q4 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
+
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     MET_pt = cudf_to_awkward(table["MET_pt"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     q4_hist = gpu_hist.Hist(
@@ -292,6 +319,8 @@ def query4_gpu(filepath,makeplot=False):
     )
     has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
     q4_hist.fill(met=MET_pt[has2jets])
+
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -360,7 +389,9 @@ def query5_gpu(filepath,makeplot=False):
 
     print("\nStarting Q5 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
+
     table = cudf.read_parquet(
         filepath,
         columns = [
@@ -372,6 +403,8 @@ def query5_gpu(filepath,makeplot=False):
             "Muon_charge",
         ]
     )
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     MET_pt = cudf_to_awkward(table["MET_pt"])
@@ -380,6 +413,8 @@ def query5_gpu(filepath,makeplot=False):
     Muon_phi = cudf_to_awkward(table["Muon_phi"])
     Muon_mass = cudf_to_awkward(table["Muon_mass"])
     Muon_charge = cudf_to_awkward(table["Muon_charge"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     q5_hist = gpu_hist.Hist(
@@ -411,6 +446,8 @@ def query5_gpu(filepath,makeplot=False):
     )
 
     q5_hist.fill(met=MET_pt[goodevent])
+
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
 
@@ -516,9 +553,12 @@ def query6_gpu(filepath,makeplot=False):
 
     print("\nStarting Q6 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass", "Jet_btag",])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
@@ -526,6 +566,8 @@ def query6_gpu(filepath,makeplot=False):
     Jet_phi = cudf_to_awkward(table["Jet_phi"])
     Jet_mass = cudf_to_awkward(table["Jet_mass"])
     Jet_btag = cudf_to_awkward(table["Jet_btag"])
+
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     jets = ak.zip(
@@ -563,6 +605,7 @@ def query6_gpu(filepath,makeplot=False):
     q6_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, 0, 1))
     q6_hist_2.fill(btag=maxBtag)
 
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -678,6 +721,7 @@ def query7_gpu(filepath,makeplot=False):
 
     print("\nStarting Q7 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = [
@@ -685,6 +729,8 @@ def query7_gpu(filepath,makeplot=False):
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
     ])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     Jet_pt   = cudf_to_awkward(table["Jet_pt"])
@@ -704,6 +750,7 @@ def query7_gpu(filepath,makeplot=False):
     Electron_mass   = cudf_to_awkward(table["Electron_mass"])
     Electron_charge = cudf_to_awkward(table["Electron_charge"])
 
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     jets = ak.zip(
@@ -754,6 +801,7 @@ def query7_gpu(filepath,makeplot=False):
     q7_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("sumjetpt", "Scalar sum of jet $p_{T}$ [GeV]", 100, 0, 200))
     q7_hist.fill(sumjetpt=ht)
 
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -887,6 +935,7 @@ def query8_gpu(filepath,makeplot=False):
 
     print("\nStarting Q8 code on gpu..")
 
+    cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = [
@@ -894,6 +943,8 @@ def query8_gpu(filepath,makeplot=False):
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "MET_pt", "MET_phi",
     ])
+
+    cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
 
     Muon_pt     = cudf_to_awkward(table["Muon_pt"])
@@ -911,6 +962,7 @@ def query8_gpu(filepath,makeplot=False):
     MET_pt  = cudf_to_awkward(table["MET_pt"])
     MET_phi = cudf_to_awkward(table["MET_phi"])
 
+    cp.cuda.Device(0).synchronize()
     t_after_load = time.time() # Time
 
     MET = ak.zip(
@@ -990,6 +1042,7 @@ def query8_gpu(filepath,makeplot=False):
     q8_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 100, 0, 200))
     q8_hist.fill(mt_lep_met=mt)
 
+    cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
@@ -1152,9 +1205,9 @@ def main():
     ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     ##filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
-    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
+    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Print the number of events we are running over
@@ -1188,7 +1241,7 @@ def main():
     print(f"\nTiming info for this run over {nevents} events:")
     print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,                           ]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
-    #exit()
+    exit()
 
     # Plotting the query outputs
     print("Making plots...")
