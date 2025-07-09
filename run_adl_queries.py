@@ -56,7 +56,6 @@ def query1_gpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["MET_pt"])
-    print("type(table)",type(table))
 
     cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
@@ -106,8 +105,7 @@ def query1_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = ["MET_pt"])
-    print("type(table)",type(table))
+    table = pq.read_table(filepath, columns = ["MET_pt"])
     t_after_read = time.time() # Time
 
     MET_pt = ak.Array(table["MET_pt"])
@@ -193,7 +191,7 @@ def query2_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = ["Jet_pt"])
+    table = pq.read_table(filepath, columns = ["Jet_pt"])
     t_after_read = time.time() # Time
 
     Jet_pt = ak.Array(table["Jet_pt"])
@@ -280,7 +278,7 @@ def query3_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
+    table = pq.read_table(filepath, columns = ["Jet_pt", "Jet_eta"])
     t_after_read = time.time() # Time
 
     Jet_pt = ak.Array(table["Jet_pt"])
@@ -322,7 +320,6 @@ def query4_gpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
-    print("type(table)",type(table))
 
     cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
@@ -370,8 +367,7 @@ def query4_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
-    print("type(table)",type(table))
+    table = pq.read_table(filepath, columns = ["Jet_pt", "MET_pt"])
     t_after_read = time.time() # Time
 
     Jet_pt = ak.Array(table["Jet_pt"])
@@ -499,7 +495,7 @@ def query5_cpu(filepath,makeplot=False):
     print("\nStarting Q5 code on cpu..")
 
     t0 = time.time()
-    table = df.read_parquet(
+    table = pq.read_table(
         filepath,
         columns = [
             "MET_pt",
@@ -663,7 +659,7 @@ def query6_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
+    table = pq.read_table(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
     t_after_read = time.time() # Time
 
     Jet_pt = ak.Array(table["Jet_pt"])
@@ -854,7 +850,7 @@ def query7_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = [
+    table = pq.read_table(filepath, columns = [
         "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
@@ -1094,7 +1090,7 @@ def query8_cpu(filepath,makeplot=False):
 
     t0 = time.time()
 
-    table = df.read_parquet(filepath, columns = [
+    table = pq.read_table(filepath, columns = [
         "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "MET_pt", "MET_phi",
@@ -1226,9 +1222,9 @@ def main():
     ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     ##filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
-    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
+    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Print the number of events we are running over
@@ -1257,6 +1253,7 @@ def main():
     hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
     hist_q7_cpu,   t_q7_cpu                = query7_cpu(filepath)
     hist_q8_cpu,   t_q8_cpu                = query8_cpu(filepath)
+    #exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\nTiming info for this run over {nevents} events:")
