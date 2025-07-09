@@ -21,11 +21,28 @@ import pandas as df
 print("cudf version", cudf.__version__)
 
 
-
-####################################################################################################
-####################################################################################################
 ####################################################################################################
 
+# Make a plot comparing the hists from CPU and GPU query
+def make_comp_plot(h1,h2=None, h1_tag="CPU",h2_tag="GPU", h1_clr="orange",h2_clr="blue", name="test"):
+
+    fig, ax = plt.subplots(1, 1, figsize=(7,7))
+
+    # Assumes this is the CPU one, so directly call plot1d
+    h1.plot1d(linewidth=4,flow="none",color=h1_clr,label=h1_tag);
+
+    # Assumes this is gpu, so call to_hist before plot1d
+    if h2 is not None:
+        h2.to_hist().plot1d(linewidth=1.5,flow="none",color=h2_clr,label=h2_tag);
+
+    ax.legend(fontsize="21",framealpha=1,frameon=False)
+    plt.title(name)
+
+    fig.savefig(f"plots/fig_{name}.png")
+    fig.savefig(f"plots/fig_{name}.pdf")
+
+
+####################################################################################################
 
 # Q1 query GPU
 # Fill hist with met for all events
@@ -39,6 +56,7 @@ def query1_gpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["MET_pt"])
+    print("type(table)",type(table))
 
     cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
@@ -89,6 +107,7 @@ def query1_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = df.read_parquet(filepath, columns = ["MET_pt"])
+    print("type(table)",type(table))
     t_after_read = time.time() # Time
 
     MET_pt = ak.Array(table["MET_pt"])
@@ -303,6 +322,7 @@ def query4_gpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
+    print("type(table)",type(table))
 
     cp.cuda.Device(0).synchronize()
     t_after_read = time.time() # Time
@@ -351,6 +371,7 @@ def query4_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = df.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
+    print("type(table)",type(table))
     t_after_read = time.time() # Time
 
     Jet_pt = ak.Array(table["Jet_pt"])
@@ -1205,9 +1226,9 @@ def main():
     ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     ##filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
+    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
-    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Print the number of events we are running over
@@ -1218,97 +1239,42 @@ def main():
     zeros = [0,0,0,0]
 
     # Run the benchmark queries on GPU
-    hist_q1_gpu, t_q1_gpu = query1_gpu(filepath)
-    hist_q2_gpu, t_q2_gpu = query2_gpu(filepath)
-    hist_q3_gpu, t_q3_gpu = query3_gpu(filepath)
-    hist_q4_gpu, t_q4_gpu = query4_gpu(filepath)
-    hist_q5_gpu, t_q5_gpu = query5_gpu(filepath)
+    hist_q1_gpu,   t_q1_gpu                = query1_gpu(filepath)
+    hist_q2_gpu,   t_q2_gpu                = query2_gpu(filepath)
+    hist_q3_gpu,   t_q3_gpu                = query3_gpu(filepath)
+    hist_q4_gpu,   t_q4_gpu                = query4_gpu(filepath)
+    hist_q5_gpu,   t_q5_gpu                = query5_gpu(filepath)
     hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = None, None, zeros #query6_gpu(filepath)
-    hist_q7_gpu, t_q7_gpu = None, zeros                        #query7_gpu(filepath)
-    hist_q8_gpu, t_q8_gpu = None, zeros                        #query8_gpu(filepath)
+    hist_q7_gpu,   t_q7_gpu                = None, zeros #query7_gpu(filepath)
+    hist_q8_gpu,   t_q8_gpu                = None, zeros #query8_gpu(filepath)
 
     # Run the benchmark queries on CPU
-    hist_q1_cpu, t_q1_cpu = query1_cpu(filepath)
-    hist_q2_cpu, t_q2_cpu = query2_cpu(filepath)
-    hist_q3_cpu, t_q3_cpu = query3_cpu(filepath)
-    hist_q4_cpu, t_q4_cpu = query4_cpu(filepath)
-    hist_q5_cpu, t_q5_cpu = query5_cpu(filepath)
+    hist_q1_cpu,   t_q1_cpu                = query1_cpu(filepath)
+    hist_q2_cpu,   t_q2_cpu                = query2_cpu(filepath)
+    hist_q3_cpu,   t_q3_cpu                = query3_cpu(filepath)
+    hist_q4_cpu,   t_q4_cpu                = query4_cpu(filepath)
+    hist_q5_cpu,   t_q5_cpu                = query5_cpu(filepath)
     hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
-    hist_q7_cpu, t_q7_cpu = query7_cpu(filepath)
-    hist_q8_cpu, t_q8_cpu = query8_cpu(filepath)
+    hist_q7_cpu,   t_q7_cpu                = query7_cpu(filepath)
+    hist_q8_cpu,   t_q8_cpu                = query8_cpu(filepath)
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\nTiming info for this run over {nevents} events:")
     print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,                           ]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
-    exit()
+    #exit()
 
-    # Plotting the query outputs
+    # Plotting the query output histos
     print("Making plots...")
-
-    # Q1
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q1_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q1.png")
-
-    # Q2
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q2_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q2.png")
-
-    # Q3
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q3_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q3_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q3.png")
-
-    # Q4
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q4_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q4_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q4.png")
-
-    # Q5
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q5_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    hist_q5_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q5.png")
-
-    # Q6
-
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q6p1_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    #hist_q6p1_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q6p1.png")
-
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q6p2_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    #hist_q6p2_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q6p2.png")
-
-    # Q7
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q7_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    #hist_q7_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q7.png")
-
-    # Q7
-    fig, ax = plt.subplots(1, 1, figsize=(7,7))
-    hist_q8_cpu.plot1d(linewidth=3,color="orange",flow="none",label="cpu");
-    #hist_q8_gpu.to_hist().plot1d(linewidth=1,color="blue",flow="none",label="gpu");
-    ax.legend(fontsize="12",framealpha=1)
-    fig.savefig("plots/fig_q8.png")
-
+    make_comp_plot(h1=hist_q1_cpu,   h2=hist_q1_gpu,   name=f"query1_nevents{nevents}")
+    make_comp_plot(h1=hist_q2_cpu,   h2=hist_q2_gpu,   name=f"query2_nevents{nevents}")
+    make_comp_plot(h1=hist_q3_cpu,   h2=hist_q3_gpu,   name=f"query3_nevents{nevents}")
+    make_comp_plot(h1=hist_q4_cpu,   h2=hist_q4_gpu,   name=f"query4_nevents{nevents}")
+    make_comp_plot(h1=hist_q5_cpu,   h2=hist_q5_gpu,   name=f"query5_nevents{nevents}")
+    make_comp_plot(h1=hist_q6p1_cpu, h2=hist_q6p1_gpu, name=f"query6_part1_nevents{nevents}")
+    make_comp_plot(h1=hist_q6p2_cpu, h2=hist_q6p2_gpu, name=f"query6_part2_nevents{nevents}")
+    make_comp_plot(h1=hist_q7_cpu,   h2=hist_q7_gpu,   name=f"query7_nevents{nevents}")
+    make_comp_plot(h1=hist_q8_cpu,   h2=hist_q8_gpu,   name=f"query8_nevents{nevents}")
     print("Done")
 
 
