@@ -46,12 +46,15 @@ def make_comp_plot(h1,h2=None, h1_tag="CPU",h2_tag="GPU", h1_clr="orange",h2_clr
 # Workaround for argmin since not implemented on GPU
 # Only tested for axis=1 (i.e., innermost, for an array with 2 axes)
 # Use at your own risk
-def argmin_workaround_axis1(in_arr,axis):
+def argmin_workaround_axis1(in_arr,axis,keepdims=False):
     if axis != 1:
         raise Exception("Not tested for axis other than 1")
     min_mask = in_arr == ak.min(in_arr,axis=axis)
     min_idx = ak.firsts(ak.local_index(in_arr)[min_mask])
-    return min_idx
+    if keepdims:
+        return(ak.singletons(min_idx))
+    else:
+        return min_idx
 
 
 ####################################################################################################
@@ -1049,7 +1052,8 @@ def query8_gpu(filepath,makeplot=False):
     # And then of the SFOS pairs, get the index of the one that's cosest to the Z
     sfos_mask = (ll_pairs.l0.pdgId == -ll_pairs.l1.pdgId)
     dist_from_z_sfos_pairs = ak.mask(dist_from_z_all_pairs,sfos_mask)
-    sfos_pair_closest_to_z_idx = ak.argmin(dist_from_z_sfos_pairs,axis=-1,keepdims=True)
+    #sfos_pair_closest_to_z_idx = ak.argmin(dist_from_z_sfos_pairs,axis=-1,keepdims=True)
+    sfos_pair_closest_to_z_idx = argmin_workaround_axis1(dist_from_z_sfos_pairs,axis=1,keepdims=True)
 
     # Build a mask (of the shape of the original lep array) corresponding to the leps that are part of the Z candidate
     mask_is_z_lep = (leptons.idx == ak.flatten(ll_pairs_idx.l0[sfos_pair_closest_to_z_idx]))
@@ -1255,8 +1259,8 @@ def main():
     hist_q4_gpu,   t_q4_gpu                = query4_gpu(filepath)
     hist_q5_gpu,   t_q5_gpu                = query5_gpu(filepath)
     hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
-    hist_q7_gpu,   t_q7_gpu                = None, zeros #query7_gpu(filepath)
-    hist_q8_gpu,   t_q8_gpu                = None, zeros #query8_gpu(filepath)
+    hist_q7_gpu,   t_q7_gpu                = query7_gpu(filepath)
+    hist_q8_gpu,   t_q8_gpu                = None,zeros  #query8_gpu(filepath)
 
     # Run the benchmark queries on CPU
     hist_q1_cpu,   t_q1_cpu                = query1_cpu(filepath)
