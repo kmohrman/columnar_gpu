@@ -22,6 +22,7 @@ print("cudf version", cudf.__version__)
 
 
 ####################################################################################################
+### Helper functions ###
 
 # Make a plot comparing the hists from CPU and GPU query
 def make_comp_plot(h1,h2=None, h1_tag="CPU",h2_tag="GPU", h1_clr="orange",h2_clr="blue", name="test"):
@@ -42,7 +43,19 @@ def make_comp_plot(h1,h2=None, h1_tag="CPU",h2_tag="GPU", h1_clr="orange",h2_clr
     fig.savefig(f"plots/fig_{name}.pdf")
 
 
+# Workaround for argmin since not implemented on GPU
+# Only tested for axis=1 (i.e., innermost, for an array with 2 axes)
+# Use at your own risk
+def argmin_workaround_axis1(in_arr,axis):
+    if axis != 1:
+        raise Exception("Not tested for axis other than 1")
+    min_mask = in_arr == ak.min(in_arr,axis=axis)
+    min_idx = ak.firsts(ak.local_index(in_arr)[min_mask])
+    return min_idx
+
+
 ####################################################################################################
+### ADL queries ###
 
 # Q1 query GPU
 # Fill hist with met for all events
@@ -604,7 +617,8 @@ def query6_gpu(filepath,makeplot=False):
     trijet["p4"] = trijet.j1 + trijet.j2 + trijet.j3
 
     trijet = ak.flatten(
-        trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
+        #trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
+        trijet[ak.singletons(argmin_workaround_axis1(abs(trijet.p4.mass - 172.5), axis=1))]
     )
 
     # Get max btag of the trijet system
@@ -619,7 +633,7 @@ def query6_gpu(filepath,makeplot=False):
     q6_hist_1 = gpu_hist.Hist("Counts", gpu_hist.Bin("pt3j", "Trijet $p_{T}$ [GeV]", 100, 0, 200))
     q6_hist_1.fill(pt3j=trijet.p4.pt)
 
-    q6_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, 0, 1))
+    q6_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, -10, 1))
     q6_hist_2.fill(btag=maxBtag)
 
     cp.cuda.Device(0).synchronize()
@@ -701,7 +715,7 @@ def query6_cpu(filepath,makeplot=False):
     q6_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
     q6_hist_1.fill(pt3j=trijet.p4.pt)
 
-    q6_hist_2 = hist.new.Reg(100, 0, 1, name="btag", label="Max jet b-tag score").Double()
+    q6_hist_2 = hist.new.Reg(100, -10, 1, name="btag", label="Max jet b-tag score").Double()
     q6_hist_2.fill(btag=maxBtag)
 
     t_after_fill = time.time()
@@ -1222,9 +1236,9 @@ def main():
     ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     ##filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
+    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
-    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
     # Print the number of events we are running over
@@ -1240,7 +1254,7 @@ def main():
     hist_q3_gpu,   t_q3_gpu                = query3_gpu(filepath)
     hist_q4_gpu,   t_q4_gpu                = query4_gpu(filepath)
     hist_q5_gpu,   t_q5_gpu                = query5_gpu(filepath)
-    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = None, None, zeros #query6_gpu(filepath)
+    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
     hist_q7_gpu,   t_q7_gpu                = None, zeros #query7_gpu(filepath)
     hist_q8_gpu,   t_q8_gpu                = None, zeros #query8_gpu(filepath)
 
@@ -1253,13 +1267,11 @@ def main():
     hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
     hist_q7_cpu,   t_q7_cpu                = query7_cpu(filepath)
     hist_q8_cpu,   t_q8_cpu                = query8_cpu(filepath)
-    #exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\nTiming info for this run over {nevents} events:")
-    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,                           ]},")
-    print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu, t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
-    #exit()
+    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_cpu,                 ]},")
+    print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu,t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
 
     # Plotting the query output histos
     print("Making plots...")
