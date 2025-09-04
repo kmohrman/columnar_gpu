@@ -56,6 +56,33 @@ def argmin_workaround_axis1(in_arr,axis,keepdims=False):
     else:
         return min_idx
 
+# Check if arrays agree
+def arrays_agree(inarr1,inarr2):
+    arr1 = ak.to_backend(inarr1,"cpu")
+    arr2 = ak.to_backend(inarr2,"cpu")
+
+    # Check for exact agreement
+    arr_agree = arr1 == arr2
+
+    # Check for largest difference
+    diff_arr = abs(arr1 - arr2)
+    largest_diff = max(diff_arr)
+
+    threshold = 1
+    large_differences = diff_arr[diff_arr>threshold]
+
+    idxmax = ak.argmax(diff_arr)
+    print(arr1)
+    print(arr2)
+    print(idxmax)
+    print(arr1[idxmax])
+    print(arr2[idxmax])
+    print("large_differences",large_differences)
+    print("len large_differences",len(large_differences))
+
+    return(largest_diff)
+
+
 
 ####################################################################################################
 ### ADL queries ###
@@ -106,7 +133,7 @@ def query1_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q1_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q1_hist,MET_pt,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -147,7 +174,7 @@ def query1_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q1_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q1_hist,MET_pt,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -174,7 +201,8 @@ def query2_gpu(filepath,makeplot=False):
         "Counts",
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
     )
-    q2_hist.fill(ptj=ak.flatten(Jet_pt))
+    fillarr = ak.flatten(Jet_pt)
+    q2_hist.fill(ptj=fillarr)
 
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
@@ -195,7 +223,7 @@ def query2_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q2_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q2_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -214,7 +242,8 @@ def query2_cpu(filepath,makeplot=False):
     t_after_load = time.time() # Time
 
     q2_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
-    q2_hist.fill(ptj=ak.flatten(Jet_pt))
+    fillarr = ak.flatten(Jet_pt)
+    q2_hist.fill(ptj=fillarr)
     t_after_fill = time.time()
 
     # Plotting
@@ -233,7 +262,7 @@ def query2_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q2_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q2_hist,ak.flatten(Jet_pt), [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -261,7 +290,8 @@ def query3_gpu(filepath,makeplot=False):
         "Counts",
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
     )
-    q3_hist.fill(ptj=ak.flatten(Jet_pt[abs(Jet_eta) < 1.0]))
+    fillarr = ak.flatten(Jet_pt[abs(Jet_eta) < 1.0])
+    q3_hist.fill(ptj=fillarr)
 
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
@@ -282,7 +312,7 @@ def query3_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q3_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q3_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -302,7 +332,8 @@ def query3_cpu(filepath,makeplot=False):
     t_after_load = time.time() # Time
 
     q3_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
-    q3_hist.fill(ptj=ak.flatten(Jet_pt[abs(Jet_eta) < 1.0]))
+    fillarr = ak.flatten(Jet_pt[abs(Jet_eta) < 1.0])
+    q3_hist.fill(ptj=fillarr)
 
     t_after_fill = time.time()
 
@@ -322,7 +353,7 @@ def query3_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q3_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q3_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -351,7 +382,8 @@ def query4_gpu(filepath,makeplot=False):
         gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
     )
     has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
-    q4_hist.fill(met=MET_pt[has2jets])
+    fillarr = MET_pt[has2jets]
+    q4_hist.fill(met=fillarr)
 
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
@@ -372,7 +404,7 @@ def query4_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q4_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q4_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q4 query CPU
@@ -392,7 +424,8 @@ def query4_cpu(filepath,makeplot=False):
 
     q4_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
     has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
-    q4_hist.fill(met=MET_pt[has2jets])
+    fillarr = MET_pt[has2jets]
+    q4_hist.fill(met=fillarr)
 
     t_after_fill = time.time()
 
@@ -412,7 +445,7 @@ def query4_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q4_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q4_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -466,7 +499,6 @@ def query5_gpu(filepath,makeplot=False):
         with_name="PtEtaPhiMCandidate",
         behavior=candidate.behavior,
     )
-    #)[0:10000]
 
 
     mupair = ak.combinations(Muon, 2, fields=["mu1", "mu2"])
@@ -478,7 +510,8 @@ def query5_gpu(filepath,makeplot=False):
         axis=1,
     )
 
-    q5_hist.fill(met=MET_pt[goodevent])
+    fillarr = MET_pt[goodevent]
+    q5_hist.fill(met=fillarr)
 
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
@@ -500,7 +533,7 @@ def query5_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q5_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q5_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -556,7 +589,8 @@ def query5_cpu(filepath,makeplot=False):
         axis=1,
     )
 
-    q5_hist.fill(met=MET_pt[goodevent])
+    fillarr = MET_pt[goodevent]
+    q5_hist.fill(met=fillarr)
     t_after_fill = time.time()
 
     # Plotting
@@ -575,7 +609,7 @@ def query5_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q5_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q5_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q6 query GPU
@@ -663,7 +697,7 @@ def query6_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q6_hist_1, q6_hist_2, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q6_hist_1, q6_hist_2, trijet.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q6 query CPU
@@ -744,7 +778,7 @@ def query6_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q6_hist_1, q6_hist_2, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q6_hist_1, q6_hist_2, trijet.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q7 query GPU
@@ -854,7 +888,7 @@ def query7_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q7_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q7_hist, ht, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q7 query CPU
@@ -959,7 +993,7 @@ def query7_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q7_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q7_hist, ht, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q8 query GPU
@@ -1096,7 +1130,7 @@ def query8_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q8_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q8_hist, mt, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q8 query CPU
@@ -1227,7 +1261,7 @@ def query8_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q8_hist,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q8_hist, mt, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -1253,24 +1287,36 @@ def main():
     zeros = [0,0,0,0]
 
     # Run the benchmark queries on GPU
-    hist_q1_gpu,   t_q1_gpu                = query1_gpu(filepath)
-    hist_q2_gpu,   t_q2_gpu                = query2_gpu(filepath)
-    hist_q3_gpu,   t_q3_gpu                = query3_gpu(filepath)
-    hist_q4_gpu,   t_q4_gpu                = query4_gpu(filepath)
-    hist_q5_gpu,   t_q5_gpu                = query5_gpu(filepath)
-    hist_q6p1_gpu, hist_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
-    hist_q7_gpu,   t_q7_gpu                = query7_gpu(filepath)
-    hist_q8_gpu,   t_q8_gpu                = None,zeros  #query8_gpu(filepath)
+    hist_q1_gpu, arr_q1_gpu, t_q1_gpu = query1_gpu(filepath)
+    hist_q2_gpu, arr_q2_gpu, t_q2_gpu = query2_gpu(filepath)
+    hist_q3_gpu, arr_q3_gpu, t_q3_gpu = query3_gpu(filepath)
+    hist_q4_gpu, arr_q4_gpu, t_q4_gpu = query4_gpu(filepath)
+    hist_q5_gpu, arr_q5_gpu, t_q5_gpu = query5_gpu(filepath)
+    hist_q6p1_gpu, hist_q6p2_gpu, arr_q6p1_gpu, arr_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
+    hist_q7_gpu, arr_q7_gpu, t_q7_gpu = query7_gpu(filepath)
+    hist_q8_gpu, arr_q8_gpu, t_q8_gpu = None,None,zeros #query8_gpu(filepath)
 
     # Run the benchmark queries on CPU
-    hist_q1_cpu,   t_q1_cpu                = query1_cpu(filepath)
-    hist_q2_cpu,   t_q2_cpu                = query2_cpu(filepath)
-    hist_q3_cpu,   t_q3_cpu                = query3_cpu(filepath)
-    hist_q4_cpu,   t_q4_cpu                = query4_cpu(filepath)
-    hist_q5_cpu,   t_q5_cpu                = query5_cpu(filepath)
-    hist_q6p1_cpu, hist_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
-    hist_q7_cpu,   t_q7_cpu                = query7_cpu(filepath)
-    hist_q8_cpu,   t_q8_cpu                = query8_cpu(filepath)
+    hist_q1_cpu,   arr_q1_cpu, t_q1_cpu = query1_cpu(filepath)
+    hist_q2_cpu,   arr_q2_cpu, t_q2_cpu = query2_cpu(filepath)
+    hist_q3_cpu,   arr_q3_cpu, t_q3_cpu = query3_cpu(filepath)
+    hist_q4_cpu,   arr_q4_cpu, t_q4_cpu = query4_cpu(filepath)
+    hist_q5_cpu,   arr_q5_cpu, t_q5_cpu = query5_cpu(filepath)
+    hist_q6p1_cpu, hist_q6p2_cpu, arr_q6p1_cpu, arr_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
+    hist_q7_cpu,   arr_q7_cpu, t_q7_cpu = query7_cpu(filepath)
+    hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = query8_cpu(filepath)
+
+
+    #t = (ak.to_backend(arr_q1_gpu,"cpu") == arr_q1_cpu)
+    print("q1:",arrays_agree(arr_q1_gpu,arr_q1_cpu),"\n")
+    print("q2:",arrays_agree(arr_q2_gpu,arr_q2_cpu),"\n")
+    print("q3:",arrays_agree(arr_q3_gpu,arr_q3_cpu),"\n")
+    print("q4:",arrays_agree(arr_q4_gpu,arr_q4_cpu),"\n")
+    print("q5:",arrays_agree(arr_q5_gpu,arr_q5_cpu),"\n")
+    print("q6:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu),"\n")
+    print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu),"\n")
+    print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu),"\n")
+    exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\nTiming info for this run over {nevents} events:")
