@@ -68,17 +68,17 @@ def arrays_agree(inarr1,inarr2):
     diff_arr = abs(arr1 - arr2)
     largest_diff = max(diff_arr)
 
-    threshold = 1
+    threshold = 0
     large_differences = diff_arr[diff_arr>threshold]
 
     idxmax = ak.argmax(diff_arr)
-    print(arr1)
-    print(arr2)
-    print(idxmax)
-    print(arr1[idxmax])
-    print(arr2[idxmax])
-    print("large_differences",large_differences)
-    print("len large_differences",len(large_differences))
+    print("arr1:",arr1)
+    print("arr2:",arr2)
+    print("idx of the max:", idxmax)
+    print("val in arr1 of the max different:", arr1[idxmax])
+    print("val in arr2 of the max different:", arr2[idxmax])
+    print("large_differences:",large_differences)
+    print("len large_differences:",len(large_differences))
 
     return(largest_diff)
 
@@ -578,7 +578,6 @@ def query5_cpu(filepath,makeplot=False):
         with_name="PtEtaPhiMCandidate",
         behavior=candidate.behavior,
     )
-    #)[0:10000]
 
     mupair = ak.combinations(Muon, 2, fields=["mu1", "mu2"])
     pairmass = (mupair.mu1 + mupair.mu2).mass
@@ -653,22 +652,21 @@ def query6_gpu(filepath,makeplot=False):
     trijet = ak.combinations(jets, 3, fields=["j1", "j2", "j3"])
     trijet["p4"] = trijet.j1 + trijet.j2 + trijet.j3
 
-    trijet = ak.flatten(
-        #trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
-        trijet[ak.singletons(argmin_workaround_axis1(abs(trijet.p4.mass - 172.5), axis=1))]
+    trijet_t = ak.flatten(
+        trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
     )
 
     # Get max btag of the trijet system
     maxBtag = np.maximum(
-        trijet.j1.btag,
+        trijet_t.j1.btag,
         np.maximum(
-            trijet.j2.btag,
-            trijet.j3.btag,
+            trijet_t.j2.btag,
+            trijet_t.j3.btag,
         ),
     )
 
     q6_hist_1 = gpu_hist.Hist("Counts", gpu_hist.Bin("pt3j", "Trijet $p_{T}$ [GeV]", 100, 0, 200))
-    q6_hist_1.fill(pt3j=trijet.p4.pt)
+    q6_hist_1.fill(pt3j=trijet_t.p4.pt)
 
     q6_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, -10, 1))
     q6_hist_2.fill(btag=maxBtag)
@@ -697,7 +695,9 @@ def query6_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q6_hist_1, q6_hist_2, trijet.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    #return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    #return(q6_hist_1, q6_hist_2, trijet.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q6_hist_1, q6_hist_2, ak.sum(trijet.p4.pt,axis=-1), maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q6 query CPU
@@ -736,21 +736,21 @@ def query6_cpu(filepath,makeplot=False):
     trijet = ak.combinations(jets, 3, fields=["j1", "j2", "j3"])
     trijet["p4"] = trijet.j1 + trijet.j2 + trijet.j3
 
-    trijet = ak.flatten(
+    trijet_t = ak.flatten(
         trijet[ak.singletons(ak.argmin(abs(trijet.p4.mass - 172.5), axis=1))]
     )
 
     # Get max btag of the trijet system
     maxBtag = np.maximum(
-        trijet.j1.btag,
+        trijet_t.j1.btag,
         np.maximum(
-            trijet.j2.btag,
-            trijet.j3.btag,
+            trijet_t.j2.btag,
+            trijet_t.j3.btag,
         ),
     )
 
     q6_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
-    q6_hist_1.fill(pt3j=trijet.p4.pt)
+    q6_hist_1.fill(pt3j=trijet_t.p4.pt)
 
     q6_hist_2 = hist.new.Reg(100, -10, 1, name="btag", label="Max jet b-tag score").Double()
     q6_hist_2.fill(btag=maxBtag)
@@ -778,7 +778,8 @@ def query6_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q6_hist_1, q6_hist_2, trijet.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    #return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q6_hist_1, q6_hist_2, ak.sum(trijet.p4.pt,axis=-1), maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q7 query GPU
@@ -1086,8 +1087,7 @@ def query8_gpu(filepath,makeplot=False):
     # And then of the SFOS pairs, get the index of the one that's cosest to the Z
     sfos_mask = (ll_pairs.l0.pdgId == -ll_pairs.l1.pdgId)
     dist_from_z_sfos_pairs = ak.mask(dist_from_z_all_pairs,sfos_mask)
-    #sfos_pair_closest_to_z_idx = ak.argmin(dist_from_z_sfos_pairs,axis=-1,keepdims=True)
-    sfos_pair_closest_to_z_idx = argmin_workaround_axis1(dist_from_z_sfos_pairs,axis=1,keepdims=True)
+    sfos_pair_closest_to_z_idx = ak.argmin(dist_from_z_sfos_pairs,axis=-1,keepdims=True)
 
     # Build a mask (of the shape of the original lep array) corresponding to the leps that are part of the Z candidate
     mask_is_z_lep = (leptons.idx == ak.flatten(ll_pairs_idx.l0[sfos_pair_closest_to_z_idx]))
@@ -1096,7 +1096,9 @@ def query8_gpu(filepath,makeplot=False):
 
     # Get ahold of the leading non-Z lepton
     leps_not_from_z_candidate = leptons[~mask_is_z_lep]
+    print("this!",leps_not_from_z_candidate)
     lead_lep_not_from_z_candidate = leps_not_from_z_candidate[ak.argmax(leps_not_from_z_candidate.pt, axis=1, keepdims=True)]
+    print("made it here!")
     lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
 
     # Get the MT
@@ -1228,7 +1230,9 @@ def query8_cpu(filepath,makeplot=False):
 
     # Get ahold of the leading non-Z lepton
     leps_not_from_z_candidate = leptons[~mask_is_z_lep]
+    print("this!",leps_not_from_z_candidate)
     lead_lep_not_from_z_candidate = leps_not_from_z_candidate[ak.argmax(leps_not_from_z_candidate.pt, axis=1, keepdims=True)]
+    print("made it!")
     lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
 
     # Get the MT
@@ -1295,6 +1299,7 @@ def main():
     hist_q6p1_gpu, hist_q6p2_gpu, arr_q6p1_gpu, arr_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
     hist_q7_gpu, arr_q7_gpu, t_q7_gpu = query7_gpu(filepath)
     hist_q8_gpu, arr_q8_gpu, t_q8_gpu = None,None,zeros #query8_gpu(filepath)
+    #hist_q8_gpu, arr_q8_gpu, t_q8_gpu = query8_gpu(filepath)
 
     # Run the benchmark queries on CPU
     hist_q1_cpu,   arr_q1_cpu, t_q1_cpu = query1_cpu(filepath)
@@ -1316,6 +1321,7 @@ def main():
     print("q6:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu),"\n")
     print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu),"\n")
     print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu),"\n")
+    print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu),"\n")
     exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
