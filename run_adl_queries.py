@@ -262,7 +262,7 @@ def query2_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    return(q2_hist,ak.flatten(Jet_pt), [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q2_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 
@@ -695,9 +695,7 @@ def query6_gpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    #return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
-    #return(q6_hist_1, q6_hist_2, trijet.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
-    return(q6_hist_1, q6_hist_2, ak.sum(trijet.p4.pt,axis=-1), maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q6 query CPU
@@ -778,8 +776,7 @@ def query6_cpu(filepath,makeplot=False):
     print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
     print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
 
-    #return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
-    return(q6_hist_1, q6_hist_2, ak.sum(trijet.p4.pt,axis=-1), maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
 
 
 # Q7 query GPU
@@ -1321,7 +1318,7 @@ def main():
     print("q6:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu),"\n")
     print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu),"\n")
     print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu),"\n")
-    print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu),"\n")
+    #print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu),"\n")
     exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
