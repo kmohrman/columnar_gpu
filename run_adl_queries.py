@@ -638,9 +638,9 @@ def query6_gpu(filepath,makeplot=False):
 
     jets = ak.zip(
         {
-            "pt": Jet_pt,
-            "eta": Jet_eta,
-            "phi": Jet_phi,
+            "pt"  : Jet_pt,
+            "eta" : Jet_eta,
+            "phi" : Jet_phi,
             "mass": Jet_mass,
             "btag": Jet_btag,
         },
@@ -1099,7 +1099,7 @@ def query8_gpu(filepath,makeplot=False):
     lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
 
     # Get the MT
-    mt = np.sqrt(2 * lead_lep_not_from_z_candidate.pt * MET_pt * (1 - np.cos(MET.delta_phi(lead_lep_not_from_z_candidate))))
+    mt = np.sqrt(2 * lead_lep_not_from_z_candidate.pt * MET.pt * (1 - np.cos(MET.delta_phi(lead_lep_not_from_z_candidate))))
 
     # Apply 3l SFOS selection
     has_3l = ak.num(leptons) >=3
@@ -1233,7 +1233,7 @@ def query8_cpu(filepath,makeplot=False):
     lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
 
     # Get the MT
-    mt = np.sqrt(2 * lead_lep_not_from_z_candidate.pt * MET_pt * (1 - np.cos(MET.delta_phi(lead_lep_not_from_z_candidate))))
+    mt = np.sqrt(2 * lead_lep_not_from_z_candidate.pt * MET.pt * (1 - np.cos(MET.delta_phi(lead_lep_not_from_z_candidate))))
 
     # Apply 3l SFOS selection
     has_3l = ak.num(leptons) >=3
@@ -1309,7 +1309,6 @@ def main():
     hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = query8_cpu(filepath)
 
 
-    #t = (ak.to_backend(arr_q1_gpu,"cpu") == arr_q1_cpu)
     print("q1:",arrays_agree(arr_q1_gpu,arr_q1_cpu),"\n")
     print("q2:",arrays_agree(arr_q2_gpu,arr_q2_cpu),"\n")
     print("q3:",arrays_agree(arr_q3_gpu,arr_q3_cpu),"\n")
@@ -1319,7 +1318,7 @@ def main():
     print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu),"\n")
     print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu),"\n")
     #print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu),"\n")
-    exit()
+    #exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\nTiming info for this run over {nevents} events:")
