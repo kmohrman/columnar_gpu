@@ -56,6 +56,7 @@ def make_comp_plot(h1,h2=None, h1_tag="CPU",h2_tag="GPU", h1_clr="orange",h2_clr
     ax.legend(fontsize="21",framealpha=1,frameon=False)
     plt.title(name)
 
+    print(f"Saving as plots/fig_{name}.png")
     fig.savefig(f"plots/fig_{name}.png")
     fig.savefig(f"plots/fig_{name}.pdf")
 
@@ -1138,9 +1139,7 @@ def query8_gpu(filepath,makeplot=False):
 
     # Get ahold of the leading non-Z lepton
     leps_not_from_z_candidate = leptons[~mask_is_z_lep]
-    print("this!",leps_not_from_z_candidate)
     lead_lep_not_from_z_candidate = leps_not_from_z_candidate[ak.argmax(leps_not_from_z_candidate.pt, axis=1, keepdims=True)]
-    print("made it here!")
     lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
 
     # Get the MT
@@ -1274,9 +1273,7 @@ def query8_cpu(filepath,makeplot=False):
 
     # Get ahold of the leading non-Z lepton
     leps_not_from_z_candidate = leptons[~mask_is_z_lep]
-    print("this!",leps_not_from_z_candidate)
     lead_lep_not_from_z_candidate = leps_not_from_z_candidate[ak.argmax(leps_not_from_z_candidate.pt, axis=1, keepdims=True)]
-    print("made it!")
     lead_lep_not_from_z_candidate = lead_lep_not_from_z_candidate[:,0] # Go from e.g. [None,[lepton object]] to [None,lepton object]
 
     # Get the MT
@@ -1315,6 +1312,9 @@ def query8_cpu(filepath,makeplot=False):
 
 def main():
 
+    # Placeholder timing array for the not yet implemented queries
+    zeros = [0,0,0,0,0]
+
     # File paths
     ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
@@ -1327,9 +1327,7 @@ def main():
     # Print the number of events we are running over
     nevents = len(df.read_parquet(filepath, columns = ["MET_pt"]))
     print(f"\nNumber of nevents to be processed: {nevents}")
-
-    # Placeholder timing array for the not yet implemented queries
-    zeros = [0,0,0,0]
+    print(f"\n\n########### Running the ADL queries ###########\n")
 
     # Run the benchmark queries on GPU
     hist_q1_gpu, arr_q1_gpu, t_q1_gpu = query1_gpu(filepath)
@@ -1353,6 +1351,8 @@ def main():
     hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = query8_cpu(filepath)
 
 
+    # Check for event-by-event agreement of the output arrays
+    print(f"\n\n########### Check event-by-event agreement of the output arrays ###########\n")
     print("q1:",arrays_agree(arr_q1_gpu,arr_q1_cpu),"\n")
     print("q2:",arrays_agree(arr_q2_gpu,arr_q2_cpu),"\n")
     print("q3:",arrays_agree(arr_q3_gpu,arr_q3_cpu),"\n")
@@ -1365,12 +1365,12 @@ def main():
     #exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
-    print(f"\nTiming info for this run over {nevents} events:")
+    print(f"\n\n########### Timing info for this run over {nevents} events ###########\n")
     print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_cpu,                 ]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu,t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
 
     # Plotting the query output histos
-    print("Making plots...")
+    print("\n\n########### Making plots ###########\n")
     make_comp_plot(h1=hist_q1_cpu,   h2=hist_q1_gpu,   name=f"query1_nevents{nevents}")
     make_comp_plot(h1=hist_q2_cpu,   h2=hist_q2_gpu,   name=f"query2_nevents{nevents}")
     make_comp_plot(h1=hist_q3_cpu,   h2=hist_q3_gpu,   name=f"query3_nevents{nevents}")
@@ -1380,7 +1380,7 @@ def main():
     make_comp_plot(h1=hist_q6p2_cpu, h2=hist_q6p2_gpu, name=f"query6_part2_nevents{nevents}")
     make_comp_plot(h1=hist_q7_cpu,   h2=hist_q7_gpu,   name=f"query7_nevents{nevents}")
     make_comp_plot(h1=hist_q8_cpu,   h2=hist_q8_gpu,   name=f"query8_nevents{nevents}")
-    print("Done")
+    print("Done!")
 
 
 
