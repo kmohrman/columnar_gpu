@@ -24,6 +24,23 @@ print("cudf version", cudf.__version__)
 ####################################################################################################
 ### Helper functions ###
 
+
+# Get the deltas between the times, and print
+def get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill,quiet=False):
+    dt_after_read = t_after_read-t0
+    dt_after_load = t_after_load-t_after_read
+    dt_after_comp = t_after_comp-t_after_load
+    dt_after_fill = t_after_fill-t_after_comp
+    dt_tot        = t_after_fill-t0
+    if not quiet:
+        print(f"Time for q1: {dt_tot}")
+        print(f"    Time for reading:   {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
+        print(f"    Time for loading:   {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
+        print(f"    Time for computing: {dt_after_comp} ({np.round(100*(dt_after_comp)/(dt_tot),1)}%)")
+        print(f"    Time for histing:   {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    return([dt_after_read,dt_after_load,dt_after_comp,dt_after_fill,dt_tot])
+
+
 # Make a plot comparing the hists from CPU and GPU query
 def make_comp_plot(h1,h2=None, h1_tag="CPU",h2_tag="GPU", h1_clr="orange",h2_clr="blue", name="test"):
 
@@ -93,47 +110,46 @@ def query1_gpu(filepath,makeplot=False):
 
     print("\nStarting Q1 code on gpu..")
 
-    # Get met pt and fill hist
-
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["MET_pt"])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     MET_pt = cudf_to_awkward(table["MET_pt"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
-    q1_hist = gpu_hist.Hist(
+    # Time after compute (no actual compute in this query)
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
+
+    q_hist = gpu_hist.Hist(
         "Counts",
         gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
     )
-    q1_hist.fill(met=MET_pt)
+    q_hist.fill(met=MET_pt)
 
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q1_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q1_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q1: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q1_hist,MET_pt,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,MET_pt,dt_lst)
 
 
 
@@ -146,35 +162,38 @@ def query1_cpu(filepath,makeplot=False):
 
     # Get met pt and fill hist
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["MET_pt"])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     MET_pt = ak.Array(table["MET_pt"])
-    t_after_load = time.time() # Time
 
-    q1_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
-    q1_hist.fill(met=MET_pt)
+    # Time after load
+    t_after_load = time.time()
+
+    # Time after compute (no actual compute in this query)
+    t_after_comp = time.time()
+
+    q_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    q_hist.fill(met=MET_pt)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q1_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q1_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q1: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q1_hist,MET_pt,[dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,MET_pt,dt_lst)
 
 
 
@@ -184,46 +203,47 @@ def query2_gpu(filepath,makeplot=False):
 
     print("\nStarting Q2 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt"])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
-    q2_hist = gpu_hist.Hist(
+    # Time after compute (no actual compute in this query)
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
+
+    q_hist = gpu_hist.Hist(
         "Counts",
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
     )
     fillarr = ak.flatten(Jet_pt)
-    q2_hist.fill(ptj=fillarr)
+    q_hist.fill(ptj=fillarr)
 
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q2_hist.to_hist().plot1d(flow="none");
+        q_hist.to_hist().plot1d(flow="none");
         fig.savefig("plots/fig_q2_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q2: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q2_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 
@@ -233,36 +253,39 @@ def query2_cpu(filepath,makeplot=False):
 
     print("\nStarting Q2 code on cpu..")
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt"])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     Jet_pt = ak.Array(table["Jet_pt"])
-    t_after_load = time.time() # Time
 
-    q2_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
+    # Time after load
+    t_after_load = time.time()
+
+    # Time after compute (no actual compute in this query)
+    t_after_comp = time.time()
+
+    q_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
     fillarr = ak.flatten(Jet_pt)
-    q2_hist.fill(ptj=fillarr)
+    q_hist.fill(ptj=fillarr)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q2_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q2_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q2: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q2_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 
@@ -272,47 +295,49 @@ def query3_gpu(filepath,makeplot=False):
 
     print("\nStarting Q3 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     Jet_eta = cudf_to_awkward(table["Jet_eta"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
-    q3_hist = gpu_hist.Hist(
+    fillarr = ak.flatten(Jet_pt[abs(Jet_eta) < 1.0])
+
+    # Time after compute
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
+
+    q_hist = gpu_hist.Hist(
         "Counts",
         gpu_hist.Bin("ptj", "Jet $p_{T}$ [GeV]", 100, 0, 200),
     )
-    fillarr = ak.flatten(Jet_pt[abs(Jet_eta) < 1.0])
-    q3_hist.fill(ptj=fillarr)
+    q_hist.fill(ptj=fillarr)
 
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q3_hist.to_hist().plot1d(flow="none");
+        q_hist.to_hist().plot1d(flow="none");
         fig.savefig("plots/fig_q3_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q3: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q3_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 
@@ -322,38 +347,41 @@ def query3_cpu(filepath,makeplot=False):
 
     print("\nStarting Q3 code on cpu..")
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt", "Jet_eta"])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     Jet_pt = ak.Array(table["Jet_pt"])
     Jet_eta = ak.Array(table["Jet_eta"])
-    t_after_load = time.time() # Time
 
-    q3_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
+    # Time after load
+    t_after_load = time.time()
+
     fillarr = ak.flatten(Jet_pt[abs(Jet_eta) < 1.0])
-    q3_hist.fill(ptj=fillarr)
 
+    # Time after compute
+    t_after_comp = time.time()
+
+    q_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
+    q_hist.fill(ptj=fillarr)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q3_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q3_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q3: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q3_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 
@@ -363,48 +391,50 @@ def query4_gpu(filepath,makeplot=False):
 
     print("\nStarting Q4 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     MET_pt = cudf_to_awkward(table["MET_pt"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
-    q4_hist = gpu_hist.Hist(
+    has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
+    fillarr = MET_pt[has2jets]
+
+    # Time after compute
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
+
+    q_hist = gpu_hist.Hist(
         "Counts",
         gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
     )
-    has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
-    fillarr = MET_pt[has2jets]
-    q4_hist.fill(met=fillarr)
+    q_hist.fill(met=fillarr)
 
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q4_hist.to_hist().plot1d(flow="none");
+        q_hist.to_hist().plot1d(flow="none");
         fig.savefig("plots/fig_q4_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q4: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q4_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 # Q4 query CPU
@@ -413,39 +443,42 @@ def query4_cpu(filepath,makeplot=False):
 
     print("\nStarting Q4 code on cpu..")
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt", "MET_pt"])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     Jet_pt = ak.Array(table["Jet_pt"])
     MET_pt = ak.Array(table["MET_pt"])
-    t_after_load = time.time() # Time
 
-    q4_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    # Time after load
+    t_after_load = time.time()
+
     has2jets = ak.sum(Jet_pt > 40, axis=1) >= 2
     fillarr = MET_pt[has2jets]
-    q4_hist.fill(met=fillarr)
 
+    # Time after compute
+    t_after_comp = time.time()
+
+    q_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    q_hist.fill(met=fillarr)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q4_hist.plot1d(flow="none");
+        qhist.plot1d(flow="none");
         fig.savefig("plots/fig_q4_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q4: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q4_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 
@@ -455,6 +488,7 @@ def query5_gpu(filepath,makeplot=False):
 
     print("\nStarting Q5 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
@@ -470,8 +504,9 @@ def query5_gpu(filepath,makeplot=False):
         ]
     )
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     MET_pt = cudf_to_awkward(table["MET_pt"])
     Muon_pt = cudf_to_awkward(table["Muon_pt"])
@@ -480,13 +515,9 @@ def query5_gpu(filepath,makeplot=False):
     Muon_mass = cudf_to_awkward(table["Muon_mass"])
     Muon_charge = cudf_to_awkward(table["Muon_charge"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
-
-    q5_hist = gpu_hist.Hist(
-        "Counts",
-        gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
-    )
+    t_after_load = time.time()
 
     Muon = ak.zip(
         {
@@ -500,7 +531,6 @@ def query5_gpu(filepath,makeplot=False):
         behavior=candidate.behavior,
     )
 
-
     mupair = ak.combinations(Muon, 2, fields=["mu1", "mu2"])
     pairmass = (mupair.mu1 + mupair.mu2).mass
     goodevent = ak.any(
@@ -511,29 +541,31 @@ def query5_gpu(filepath,makeplot=False):
     )
 
     fillarr = MET_pt[goodevent]
-    q5_hist.fill(met=fillarr)
 
+    # Time after compute
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
+
+    q_hist = gpu_hist.Hist(
+        "Counts",
+        gpu_hist.Bin("met", "$E_{T}^{miss}$ [GeV]", 100, 0, 200),
+    )
+    q_hist.fill(met=fillarr)
+
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
-
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q5_hist.to_hist().plot1d(flow="none");
+        q_hist.to_hist().plot1d(flow="none");
         fig.savefig("plots/fig_q5_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q5: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q5_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 
@@ -543,7 +575,9 @@ def query5_cpu(filepath,makeplot=False):
 
     print("\nStarting Q5 code on cpu..")
 
+    # Time t0
     t0 = time.time()
+
     table = pq.read_table(
         filepath,
         columns = [
@@ -555,7 +589,9 @@ def query5_cpu(filepath,makeplot=False):
             "Muon_charge",
         ]
     )
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     MET_pt      = ak.Array(table["MET_pt"])
     Muon_pt     = ak.Array(table["Muon_pt"])
@@ -563,9 +599,9 @@ def query5_cpu(filepath,makeplot=False):
     Muon_phi    = ak.Array(table["Muon_phi"])
     Muon_mass   = ak.Array(table["Muon_mass"])
     Muon_charge = ak.Array(table["Muon_charge"])
-    t_after_load = time.time() # Time
 
-    q5_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    # Time after load
+    t_after_load = time.time()
 
     Muon = ak.zip(
         {
@@ -589,26 +625,26 @@ def query5_cpu(filepath,makeplot=False):
     )
 
     fillarr = MET_pt[goodevent]
-    q5_hist.fill(met=fillarr)
+
+    # Time after compute
+    t_after_comp = time.time()
+
+    q_hist = hist.new.Reg(100, 0, 200, name="met", label="$E_{T}^{miss}$ [GeV]").Double()
+    q_hist.fill(met=fillarr)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q5_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q5_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q5: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q5_hist,fillarr, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,fillarr,dt_lst)
 
 
 # Q6 query GPU
@@ -619,13 +655,15 @@ def query6_gpu(filepath,makeplot=False):
 
     print("\nStarting Q6 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
     table = cudf.read_parquet(filepath, columns = ["Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass", "Jet_btag",])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     Jet_pt = cudf_to_awkward(table["Jet_pt"])
     Jet_eta = cudf_to_awkward(table["Jet_eta"])
@@ -633,8 +671,9 @@ def query6_gpu(filepath,makeplot=False):
     Jet_mass = cudf_to_awkward(table["Jet_mass"])
     Jet_btag = cudf_to_awkward(table["Jet_btag"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
     jets = ak.zip(
         {
@@ -664,14 +703,19 @@ def query6_gpu(filepath,makeplot=False):
             trijet_t.j3.btag,
         ),
     )
-    fillarr1 = trijet_t.p4.pt
+    fillarr_1 = trijet_t.p4.pt
 
-    q6_hist_1 = gpu_hist.Hist("Counts", gpu_hist.Bin("pt3j", "Trijet $p_{T}$ [GeV]", 100, 0, 200))
-    q6_hist_1.fill(pt3j=fillarr1)
+    # Time after compute
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
 
-    q6_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, -10, 1))
-    q6_hist_2.fill(btag=maxBtag)
+    q_hist_1 = gpu_hist.Hist("Counts", gpu_hist.Bin("pt3j", "Trijet $p_{T}$ [GeV]", 100, 0, 200))
+    q_hist_1.fill(pt3j=fillarr_1)
 
+    q_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, -10, 1))
+    q_hist_2.fill(btag=maxBtag)
+
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
@@ -679,24 +723,17 @@ def query6_gpu(filepath,makeplot=False):
     if makeplot:
         # First hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q6_hist_1.to_hist().plot1d(flow="none");
+        q_hist_1.to_hist().plot1d(flow="none");
         fig.savefig("plots/fig_q6p1_gpu.png")
         # Second hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q6_hist_2.to_hist().plot1d(flow="none");
+        q_hist_2.to_hist().plot1d(flow="none");
         fig.savefig("plots/fig_q6p2_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q6: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist_1, q_hist_2, fillarr_1, maxBtag, dt_lst)
 
 
 # Q6 query CPU
@@ -707,17 +744,22 @@ def query6_cpu(filepath,makeplot=False):
 
     print("\nStarting Q6 code on cpu..")
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     Jet_pt = ak.Array(table["Jet_pt"])
     Jet_eta = ak.Array(table["Jet_eta"])
     Jet_phi = ak.Array(table["Jet_phi"])
     Jet_mass = ak.Array(table["Jet_mass"])
     Jet_btag = ak.Array(table["Jet_btag"])
-    t_after_load = time.time() # Time
+
+    # Time after load
+    t_after_load = time.time()
 
     jets = ak.zip(
         {
@@ -747,38 +789,35 @@ def query6_cpu(filepath,makeplot=False):
             trijet_t.j3.btag,
         ),
     )
-    fillarr1 = trijet_t.p4.pt
+    fillarr_1 = trijet_t.p4.pt
 
-    q6_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
-    q6_hist_1.fill(pt3j=fillarr1)
+    # Time after compute
+    t_after_comp = time.time()
 
-    q6_hist_2 = hist.new.Reg(100, -10, 1, name="btag", label="Max jet b-tag score").Double()
-    q6_hist_2.fill(btag=maxBtag)
+    q_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
+    q_hist_1.fill(pt3j=fillarr_1)
 
+    q_hist_2 = hist.new.Reg(100, -10, 1, name="btag", label="Max jet b-tag score").Double()
+    q_hist_2.fill(btag=maxBtag)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         # First hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q6_hist_1.plot1d(flow="none");
+        q_hist_1.plot1d(flow="none");
         fig.savefig("plots/fig_q6p1_cpu.png")
         # Second hist
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q6_hist_2.plot1d(flow="none");
+        q_hist_2.plot1d(flow="none");
         fig.savefig("plots/fig_q6p2_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q6: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q6_hist_1, q6_hist_2, trijet_t.p4.pt, maxBtag, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist_1, q_hist_2, fillarr_1, maxBtag, dt_lst)
 
 
 # Q7 query GPU
@@ -789,6 +828,7 @@ def query7_gpu(filepath,makeplot=False):
 
     print("\nStarting Q7 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
@@ -798,8 +838,9 @@ def query7_gpu(filepath,makeplot=False):
         "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
     ])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     Jet_pt   = cudf_to_awkward(table["Jet_pt"])
     Jet_eta  = cudf_to_awkward(table["Jet_eta"])
@@ -818,8 +859,9 @@ def query7_gpu(filepath,makeplot=False):
     Electron_mass   = cudf_to_awkward(table["Electron_mass"])
     Electron_charge = cudf_to_awkward(table["Electron_charge"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
     jets = ak.zip(
         {
@@ -865,30 +907,28 @@ def query7_gpu(filepath,makeplot=False):
     jets_good = jets[(jets.pt>30) & (dr>0.4)]
     ht = ak.sum(jets_good.pt,axis=1)
 
-    # Fill hist
-    q7_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("sumjetpt", "Scalar sum of jet $p_{T}$ [GeV]", 100, 0, 200))
-    q7_hist.fill(sumjetpt=ht)
+    # Time after compute
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
 
+    # Fill hist
+    q_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("sumjetpt", "Scalar sum of jet $p_{T}$ [GeV]", 100, 0, 200))
+    q_hist.fill(sumjetpt=ht)
+
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q7_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q7_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q7: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q7_hist, ht, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,ht,dt_lst)
 
 
 # Q7 query CPU
@@ -899,6 +939,7 @@ def query7_cpu(filepath,makeplot=False):
 
     print("\nStarting Q7 code on cpu..")
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = [
@@ -906,7 +947,9 @@ def query7_cpu(filepath,makeplot=False):
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"
     ])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     Jet_pt   = ak.Array(table["Jet_pt"])
     Jet_eta  = ak.Array(table["Jet_eta"])
@@ -925,7 +968,8 @@ def query7_cpu(filepath,makeplot=False):
     Electron_mass   = ak.Array(table["Electron_mass"])
     Electron_charge = ak.Array(table["Electron_charge"])
 
-    t_after_load = time.time() # Time
+    # Time after load
+    t_after_load = time.time()
 
     jets = ak.zip(
         {
@@ -971,29 +1015,26 @@ def query7_cpu(filepath,makeplot=False):
     jets_good = jets[(jets.pt>30) & (dr>0.4)]
     ht = ak.sum(jets_good.pt,axis=1)
 
-    # Fill hist
-    q7_hist = hist.new.Reg(100, 0, 200, name="sumjetpt", label="Scalar sum of jet $p_{T}$ [GeV]").Double()
-    q7_hist.fill(sumjetpt=ht)
+    # Time after compute
+    t_after_comp = time.time()
 
+    # Fill hist
+    q_hist = hist.new.Reg(100, 0, 200, name="sumjetpt", label="Scalar sum of jet $p_{T}$ [GeV]").Double()
+    q_hist.fill(sumjetpt=ht)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q7_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q7_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q7: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q7_hist, ht, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,ht,dt_lst)
 
 
 # Q8 query GPU
@@ -1003,6 +1044,7 @@ def query8_gpu(filepath,makeplot=False):
 
     print("\nStarting Q8 code on gpu..")
 
+    # Time t0
     cp.cuda.Device(0).synchronize()
     t0 = time.time()
 
@@ -1012,8 +1054,9 @@ def query8_gpu(filepath,makeplot=False):
         "MET_pt", "MET_phi",
     ])
 
+    # Time after read
     cp.cuda.Device(0).synchronize()
-    t_after_read = time.time() # Time
+    t_after_read = time.time()
 
     Muon_pt     = cudf_to_awkward(table["Muon_pt"])
     Muon_eta    = cudf_to_awkward(table["Muon_eta"])
@@ -1030,8 +1073,9 @@ def query8_gpu(filepath,makeplot=False):
     MET_pt  = cudf_to_awkward(table["MET_pt"])
     MET_phi = cudf_to_awkward(table["MET_phi"])
 
+    # Time after load
     cp.cuda.Device(0).synchronize()
-    t_after_load = time.time() # Time
+    t_after_load = time.time()
 
     MET = ak.zip(
         {
@@ -1067,7 +1111,6 @@ def query8_gpu(filepath,makeplot=False):
         with_name="PtEtaPhiMCandidate",
         behavior=candidate.behavior,
     )
-
 
     # Get good leptons
     leptons = ak.with_name(ak.concatenate([Electron,Muon],axis=1),'PtEtaPhiMCandidate')
@@ -1108,30 +1151,28 @@ def query8_gpu(filepath,makeplot=False):
     has_sfos = ak.any(sfos_mask,axis=1)
     mt = mt[has_3l & has_sfos]
 
-    # Fill hist
-    q8_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 100, 0, 200))
-    q8_hist.fill(mt_lep_met=mt)
+    # Time after compute
+    cp.cuda.Device(0).synchronize()
+    t_after_comp = time.time()
 
+    # Fill hist
+    q_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 100, 0, 200))
+    q_hist.fill(mt_lep_met=mt)
+
+    # Time after fill
     cp.cuda.Device(0).synchronize()
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q8_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q8_gpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q8: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q8_hist, mt, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,mt,dt_lst)
 
 
 # Q8 query CPU
@@ -1141,6 +1182,7 @@ def query8_cpu(filepath,makeplot=False):
 
     print("\nStarting Q8 code on cpu..")
 
+    # Time t0
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = [
@@ -1148,7 +1190,9 @@ def query8_cpu(filepath,makeplot=False):
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
         "MET_pt", "MET_phi",
     ])
-    t_after_read = time.time() # Time
+
+    # Time after read
+    t_after_read = time.time()
 
     Muon_pt     = ak.Array(table["Muon_pt"])
     Muon_eta    = ak.Array(table["Muon_eta"])
@@ -1165,7 +1209,8 @@ def query8_cpu(filepath,makeplot=False):
     MET_pt = ak.Array(table["MET_pt"])
     MET_phi = ak.Array(table["MET_phi"])
 
-    t_after_load = time.time() # Time
+    # Time after load
+    t_after_load = time.time()
 
     MET = ak.zip(
         {
@@ -1242,29 +1287,26 @@ def query8_cpu(filepath,makeplot=False):
     has_sfos = ak.any(sfos_mask,axis=1)
     mt = mt[has_3l & has_sfos]
 
-    # Fill hist
-    q8_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
-    q8_hist.fill(mt_lep_met=mt)
+    # Time after compute
+    t_after_comp = time.time()
 
+    # Fill hist
+    q_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
+    q_hist.fill(mt_lep_met=mt)
+
+    # Time after fill
     t_after_fill = time.time()
 
     # Plotting
     if makeplot:
         fig, ax = plt.subplots(1, 1, figsize=(7,7))
-        q8_hist.plot1d(flow="none");
+        q_hist.plot1d(flow="none");
         fig.savefig("plots/fig_q8_cpu.png")
 
-    # Timing information
-    dt_after_read = t_after_read-t0
-    dt_after_load = t_after_load-t_after_read
-    dt_after_fill = t_after_fill-t_after_load
-    dt_tot        = t_after_fill-t0
-    print(f"Time for q8: {dt_tot}")
-    print(f"    Time for reading: {dt_after_read} ({np.round(100*(dt_after_read)/(dt_tot),1)}%)")
-    print(f"    Time for loading: {dt_after_load} ({np.round(100*(dt_after_load)/(dt_tot),1)}%)")
-    print(f"    Time for computing and histing: {dt_after_fill} ({np.round(100*(dt_after_fill)/(dt_tot),1)}%)")
+    # Get and print timing information
+    dt_lst = get_dt(t0,t_after_read,t_after_load,t_after_comp,t_after_fill)
 
-    return(q8_hist, mt, [dt_after_read,dt_after_load,dt_after_fill,dt_tot])
+    return(q_hist,mt,dt_lst)
 
 
 
