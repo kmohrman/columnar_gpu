@@ -664,9 +664,10 @@ def query6_gpu(filepath,makeplot=False):
             trijet_t.j3.btag,
         ),
     )
+    fillarr1 = trijet_t.p4.pt
 
     q6_hist_1 = gpu_hist.Hist("Counts", gpu_hist.Bin("pt3j", "Trijet $p_{T}$ [GeV]", 100, 0, 200))
-    q6_hist_1.fill(pt3j=trijet_t.p4.pt)
+    q6_hist_1.fill(pt3j=fillarr1)
 
     q6_hist_2 = gpu_hist.Hist("Counts", gpu_hist.Bin("btag", "Max jet b-tag score", 100, -10, 1))
     q6_hist_2.fill(btag=maxBtag)
@@ -746,9 +747,10 @@ def query6_cpu(filepath,makeplot=False):
             trijet_t.j3.btag,
         ),
     )
+    fillarr1 = trijet_t.p4.pt
 
     q6_hist_1 = hist.new.Reg(100, 0, 200, name="pt3j", label="Trijet $p_{T}$ [GeV]").Double()
-    q6_hist_1.fill(pt3j=trijet_t.p4.pt)
+    q6_hist_1.fill(pt3j=fillarr1)
 
     q6_hist_2 = hist.new.Reg(100, -10, 1, name="btag", label="Max jet b-tag score").Double()
     q6_hist_2.fill(btag=maxBtag)
