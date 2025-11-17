@@ -84,19 +84,22 @@ def arrays_agree(inarr1,inarr2):
 
     # Check for largest difference
     diff_arr = abs(arr1 - arr2)
+    print("diff_arr",diff_arr)
+    diff_arr = ak.fill_none(diff_arr,0)
     largest_diff = max(diff_arr)
-
     threshold = 0
+    #threshold = 1e-8
     large_differences = diff_arr[diff_arr>threshold]
+    frac_large_differences = len(large_differences)/len(arr1)
 
     idxmax = ak.argmax(diff_arr)
     print("arr1:",arr1)
     print("arr2:",arr2)
-    print("idx of the max:", idxmax)
-    print("val in arr1 of the max different:", arr1[idxmax])
-    print("val in arr2 of the max different:", arr2[idxmax])
+    print("val in arr1 of the max different:", f"{arr1[idxmax]:.20f}")
+    print("val in arr2 of the max different:", f"{arr2[idxmax]:.20f}")
     print("large_differences:",large_differences)
     print("len large_differences:",len(large_differences))
+    print("percent large_differences:",f"{np.round(frac_large_differences*100,2)}%")
 
     return(largest_diff)
 
@@ -666,9 +669,9 @@ def query6_gpu(filepath,makeplot=False):
     cp.cuda.Device(0).synchronize()
     t_after_read = time.time()
 
-    Jet_pt = cudf_to_awkward(table["Jet_pt"])
-    Jet_eta = cudf_to_awkward(table["Jet_eta"])
-    Jet_phi = cudf_to_awkward(table["Jet_phi"])
+    Jet_pt   = cudf_to_awkward(table["Jet_pt"])
+    Jet_eta  = cudf_to_awkward(table["Jet_eta"])
+    Jet_phi  = cudf_to_awkward(table["Jet_phi"])
     Jet_mass = cudf_to_awkward(table["Jet_mass"])
     Jet_btag = cudf_to_awkward(table["Jet_btag"])
 
@@ -753,9 +756,9 @@ def query6_cpu(filepath,makeplot=False):
     # Time after read
     t_after_read = time.time()
 
-    Jet_pt = ak.Array(table["Jet_pt"])
-    Jet_eta = ak.Array(table["Jet_eta"])
-    Jet_phi = ak.Array(table["Jet_phi"])
+    Jet_pt   = ak.Array(table["Jet_pt"])
+    Jet_eta  = ak.Array(table["Jet_eta"])
+    Jet_phi  = ak.Array(table["Jet_phi"])
     Jet_mass = ak.Array(table["Jet_mass"])
     Jet_btag = ak.Array(table["Jet_btag"])
 
@@ -843,16 +846,16 @@ def query7_gpu(filepath,makeplot=False):
     cp.cuda.Device(0).synchronize()
     t_after_read = time.time()
 
-    Jet_pt   = cudf_to_awkward(table["Jet_pt"])
-    Jet_eta  = cudf_to_awkward(table["Jet_eta"])
-    Jet_phi  = cudf_to_awkward(table["Jet_phi"])
-    Jet_mass = cudf_to_awkward(table["Jet_mass"])
+    Jet_pt          = cudf_to_awkward(table["Jet_pt"])
+    Jet_eta         = cudf_to_awkward(table["Jet_eta"])
+    Jet_phi         = cudf_to_awkward(table["Jet_phi"])
+    Jet_mass        = cudf_to_awkward(table["Jet_mass"])
 
-    Muon_pt     = cudf_to_awkward(table["Muon_pt"])
-    Muon_eta    = cudf_to_awkward(table["Muon_eta"])
-    Muon_phi    = cudf_to_awkward(table["Muon_phi"])
-    Muon_mass   = cudf_to_awkward(table["Muon_mass"])
-    Muon_charge = cudf_to_awkward(table["Muon_charge"])
+    Muon_pt         = cudf_to_awkward(table["Muon_pt"])
+    Muon_eta        = cudf_to_awkward(table["Muon_eta"])
+    Muon_phi        = cudf_to_awkward(table["Muon_phi"])
+    Muon_mass       = cudf_to_awkward(table["Muon_mass"])
+    Muon_charge     = cudf_to_awkward(table["Muon_charge"])
 
     Electron_pt     = cudf_to_awkward(table["Electron_pt"])
     Electron_eta    = cudf_to_awkward(table["Electron_eta"])
@@ -1366,7 +1369,7 @@ def main():
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\n\n########### Timing info for this run over {nevents} events ###########\n")
-    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_cpu,                 ]},")
+    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_gpu,t_q7_gpu,        ]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu,t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
 
     # Plotting the query output histos
@@ -1379,7 +1382,7 @@ def main():
     make_comp_plot(h1=hist_q6p1_cpu, h2=hist_q6p1_gpu, name=f"query6_part1_nevents{nevents}")
     make_comp_plot(h1=hist_q6p2_cpu, h2=hist_q6p2_gpu, name=f"query6_part2_nevents{nevents}")
     make_comp_plot(h1=hist_q7_cpu,   h2=hist_q7_gpu,   name=f"query7_nevents{nevents}")
-    make_comp_plot(h1=hist_q8_cpu,   h2=hist_q8_gpu,   name=f"query8_nevents{nevents}")
+    #make_comp_plot(h1=hist_q8_cpu,   h2=hist_q8_gpu,   name=f"query8_nevents{nevents}")
     print("Done!")
 
 
