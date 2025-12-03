@@ -4,6 +4,7 @@ import cupy as cp
 import numpy as np
 import numba as nb
 import matplotlib.pyplot as plt
+import os
 
 import cudf
 from ak_from_cudf import cudf_to_awkward
@@ -75,7 +76,7 @@ def argmin_workaround_axis1(in_arr,axis,keepdims=False):
         return min_idx
 
 # Check if arrays agree
-def arrays_agree(inarr1,inarr2):
+def arrays_agree(inarr1,inarr2,tag):
     arr1 = ak.to_backend(inarr1,"cpu")
     arr2 = ak.to_backend(inarr2,"cpu")
 
@@ -87,8 +88,8 @@ def arrays_agree(inarr1,inarr2):
     print("diff_arr",diff_arr)
     diff_arr = ak.fill_none(diff_arr,0)
     largest_diff = max(diff_arr)
-    threshold = 0
-    #threshold = 1e-8
+    #threshold = 0
+    threshold = 1e-6
     large_differences = diff_arr[diff_arr>threshold]
     frac_large_differences = len(large_differences)/len(arr1)
 
@@ -100,6 +101,17 @@ def arrays_agree(inarr1,inarr2):
     print("large_differences:",large_differences)
     print("len large_differences:",len(large_differences))
     print("percent large_differences:",f"{np.round(frac_large_differences*100,2)}%")
+
+    # Make plot
+    fig1, ax1 = plt.subplots(nrows=1, ncols=1)
+    ax1.hist(diff_arr,bins=200,range=(min(diff_arr)-min(diff_arr)*0.2,max(diff_arr)*1.2))
+    plt.text(0.19, 0.80, f"Tot entries: {len(diff_arr)}", dict(size=10),transform=fig1.transFigure)
+    plt.text(0.19, 0.75, f"Absolute largest diff: {largest_diff}", dict(size=10),transform=fig1.transFigure)
+    plt.text(0.19, 0.70, f"Absolute threshold: {threshold}", dict(size=10),transform=fig1.transFigure)
+    plt.text(0.19, 0.65, f"Entries with absolute diff larger than threshold: {len(large_differences)}, {np.round(frac_large_differences*100,2)}%", dict(size=10),transform=fig1.transFigure)
+    plt.title(f"Differences between CPU and gpu for {tag}")
+    plt.yscale('log')
+    fig1.savefig(os.path.join(f"plots/gpu_cpu_diff_hist_{tag}_log.png"),format="png")
 
     return(largest_diff)
 
@@ -170,6 +182,7 @@ def query1_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["MET_pt"])
+    #table = ak.from_parquet(filepath, columns = ["MET_pt"])
 
     # Time after read
     t_after_read = time.time()
@@ -261,6 +274,7 @@ def query2_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt"])
+    #table = ak.from_parquet(filepath, columns = ["Jet_pt"])
 
     # Time after read
     t_after_read = time.time()
@@ -355,6 +369,7 @@ def query3_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt", "Jet_eta"])
+    #table = ak.from_parquet(filepath, columns = ["Jet_pt", "Jet_eta"])
 
     # Time after read
     t_after_read = time.time()
@@ -451,6 +466,7 @@ def query4_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt", "MET_pt"])
+    #table = ak.from_parquet(filepath, columns = ["Jet_pt", "MET_pt"])
 
     # Time after read
     t_after_read = time.time()
@@ -582,6 +598,7 @@ def query5_cpu(filepath,makeplot=False):
     # Time t0
     t0 = time.time()
 
+    #table = ak.from_parquet(
     table = pq.read_table(
         filepath,
         columns = [
@@ -752,6 +769,7 @@ def query6_cpu(filepath,makeplot=False):
     t0 = time.time()
 
     table = pq.read_table(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
+    #table = ak.from_parquet(filepath, columns = ["Jet_pt","Jet_eta","Jet_phi","Jet_mass","Jet_btag"])
 
     # Time after read
     t_after_read = time.time()
@@ -946,6 +964,7 @@ def query7_cpu(filepath,makeplot=False):
     # Time t0
     t0 = time.time()
 
+    #table = ak.from_parquet(filepath, columns = [
     table = pq.read_table(filepath, columns = [
         "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
@@ -1158,7 +1177,7 @@ def query8_gpu(filepath,makeplot=False):
     t_after_comp = time.time()
 
     # Fill hist
-    q_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 100, 0, 200))
+    q_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 20, 0, 200))
     q_hist.fill(mt_lep_met=mt)
 
     # Time after fill
@@ -1187,6 +1206,7 @@ def query8_cpu(filepath,makeplot=False):
     # Time t0
     t0 = time.time()
 
+    #table = ak.from_parquet(filepath, columns = [
     table = pq.read_table(filepath, columns = [
         "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge",
         "Electron_pt", "Electron_eta", "Electron_phi", "Electron_mass", "Electron_charge",
@@ -1291,7 +1311,7 @@ def query8_cpu(filepath,makeplot=False):
     t_after_comp = time.time()
 
     # Fill hist
-    q_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
+    q_hist = hist.new.Reg(20, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
     q_hist.fill(mt_lep_met=mt)
 
     # Time after fill
@@ -1352,25 +1372,27 @@ def main():
     hist_q6p1_cpu, hist_q6p2_cpu, arr_q6p1_cpu, arr_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
     hist_q7_cpu,   arr_q7_cpu, t_q7_cpu = query7_cpu(filepath)
     hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = query8_cpu(filepath)
-
+    #hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = None,None,zeros
+    #exit()
 
     # Check for event-by-event agreement of the output arrays
     print(f"\n\n########### Check event-by-event agreement of the output arrays ###########\n")
-    print("q1:",arrays_agree(arr_q1_gpu,arr_q1_cpu),"\n")
-    print("q2:",arrays_agree(arr_q2_gpu,arr_q2_cpu),"\n")
-    print("q3:",arrays_agree(arr_q3_gpu,arr_q3_cpu),"\n")
-    print("q4:",arrays_agree(arr_q4_gpu,arr_q4_cpu),"\n")
-    print("q5:",arrays_agree(arr_q5_gpu,arr_q5_cpu),"\n")
-    print("q6:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu),"\n")
-    print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu),"\n")
-    print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu),"\n")
-    #print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu),"\n")
+    print("q1:",arrays_agree(arr_q1_gpu,arr_q1_cpu,"q1"),"\n")
+    print("q2:",arrays_agree(arr_q2_gpu,arr_q2_cpu,"q2"),"\n")
+    print("q3:",arrays_agree(arr_q3_gpu,arr_q3_cpu,"q3"),"\n")
+    print("q4:",arrays_agree(arr_q4_gpu,arr_q4_cpu,"q4"),"\n")
+    print("q5:",arrays_agree(arr_q5_gpu,arr_q5_cpu,"q5"),"\n")
+    print("q6:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu,"q6p1"),"\n")
+    print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu,"q6p2"),"\n")
+    print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu,"q7"),"\n")
+    #print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu,"q8"),"\n")
     #exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
     print(f"\n\n########### Timing info for this run over {nevents} events ###########\n")
     print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_gpu,t_q7_gpu,        ]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu,t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
+    #exit()
 
     # Plotting the query output histos
     print("\n\n########### Making plots ###########\n")
@@ -1382,7 +1404,7 @@ def main():
     make_comp_plot(h1=hist_q6p1_cpu, h2=hist_q6p1_gpu, name=f"query6_part1_nevents{nevents}")
     make_comp_plot(h1=hist_q6p2_cpu, h2=hist_q6p2_gpu, name=f"query6_part2_nevents{nevents}")
     make_comp_plot(h1=hist_q7_cpu,   h2=hist_q7_gpu,   name=f"query7_nevents{nevents}")
-    #make_comp_plot(h1=hist_q8_cpu,   h2=hist_q8_gpu,   name=f"query8_nevents{nevents}")
+    make_comp_plot(h1=hist_q8_cpu,   h2=hist_q8_gpu,   name=f"query8_nevents{nevents}")
     print("Done!")
 
 
