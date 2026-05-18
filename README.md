@@ -1,21 +1,20 @@
 # columnar_gpu
 
-Example `srun` command to get a node with GPU (at UF):
+Example `srun` commands to get a node with GPU or CPU (at UF):
 ```
-srun --qos=avery --account=avery --partition=gpu --gpus=1 --mem=16000 --constraint=a100 --pty bash -i
-```
-Example `srun` command to get a node with CPU (at UF):
-```
-srun -t 600 --qos=avery --account=avery --cpus-per-task=4 --mem-per-cpu=4G --pty bash -i
+srun --partition=hpg-b200 --gpus=1 --constraint=b200 --pty bash -i
+srun -t 600 --qos=avery --account=avery --cpus-per-task=1 --mem-per-cpu=4G --pty bash -i
 ```
 
 Set up the environment:
 ```
-conda env create -f environment.yml
-conda activate coffeagpu_env
-pip install hepconvert
-conda uninstall coffea
+conda create -n test_env_may15_00 -c rapidsai -c conda-forge cudf=25.12 python=3.13 'cuda-version>=12.2,<=12.9'
 ```
-Then navigate to your local coffea dir from Lindsey (get it via `git clone -b jitters https://github.com/scikit-hep/coffea.git`) and pip install it.
+Then install coffea and awkward:
+  - Navigate to your local coffea dir from Lindsey (get it via `git clone -b jitters https://github.com/scikit-hep/coffea.git`) and pip install it via `pip install -e .`.
+  - Navigate to your local awkward dir and install it via the "[Installation for developers](https://github.com/scikit-hep/awkward#installation-for-developers)" instructions. 
 
-Now you are ready to run.
+Now you are ready to run:
+```
+python run_adl_queries.py
+```
