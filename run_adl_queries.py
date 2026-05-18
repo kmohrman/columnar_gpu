@@ -94,8 +94,8 @@ def arrays_agree(inarr1,inarr2,tag):
     frac_large_differences = len(large_differences)/len(arr1)
 
     idxmax = ak.argmax(diff_arr)
-    print("arr1:",arr1)
-    print("arr2:",arr2)
+    #print("arr1:",arr1)
+    #print("arr2:",arr2)
     print("val in arr1 of the max different:", f"{arr1[idxmax]:.20f}")
     print("val in arr2 of the max different:", f"{arr2[idxmax]:.20f}")
     print("large_differences:",large_differences)
@@ -385,7 +385,11 @@ def query3_cpu(filepath,makeplot=False):
     # Time after compute
     t_after_comp = time.time()
 
-    q_hist = hist.new.Reg(100, 0, 200, name="ptj", label="Jet $p_{T}$ [GeV]").Double()
+    q_hist = hist.new.Reg(
+        100, 0, 200, 
+        name="ptj", 
+        label="Jet $p_{T}$ [GeV]"
+    ).Double()
     q_hist.fill(ptj=fillarr)
 
     # Time after fill
@@ -1177,7 +1181,7 @@ def query8_gpu(filepath,makeplot=False):
     t_after_comp = time.time()
 
     # Fill hist
-    q_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 20, 0, 200))
+    q_hist = gpu_hist.Hist("Counts", gpu_hist.Bin("mt_lep_met", "lep-MET transverse mass [GeV]", 100, 0, 200))
     q_hist.fill(mt_lep_met=mt)
 
     # Time after fill
@@ -1311,7 +1315,7 @@ def query8_cpu(filepath,makeplot=False):
     t_after_comp = time.time()
 
     # Fill hist
-    q_hist = hist.new.Reg(20, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
+    q_hist = hist.new.Reg(100, 0, 200, name="mt_lep_met", label="lep-MET transverse mass [GeV]").Double()
     q_hist.fill(mt_lep_met=mt)
 
     # Time after fill
@@ -1335,15 +1339,13 @@ def query8_cpu(filepath,makeplot=False):
 
 def main():
 
-    # Placeholder timing array for the not yet implemented queries
-    zeros = [0,0,0,0,0]
-
     # File paths
     ## https://github.com/CoffeaTeam/coffea-benchmarks/blob/master/coffea-adl-benchmarks.ipynb
     ##root_filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu.root:Events"
     ##filepath = "/blue/p.chang/k.mohrman/fromLindsey/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
-    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
-    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
+    #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_100k.parquet"
+    #filepath = "tmp_pq/test_pq_100k.parquet"
+    filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_1M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/pq_subset_10M.parquet"
     #filepath = "/blue/p.chang/k.mohrman/coffea_rd/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN_subsets/Run2012B_SingleMu_compressed_zstdlv3_PPv2-0_PLAIN.parquet"
 
@@ -1360,8 +1362,8 @@ def main():
     hist_q5_gpu, arr_q5_gpu, t_q5_gpu = query5_gpu(filepath)
     hist_q6p1_gpu, hist_q6p2_gpu, arr_q6p1_gpu, arr_q6p2_gpu, t_q6_gpu = query6_gpu(filepath)
     hist_q7_gpu, arr_q7_gpu, t_q7_gpu = query7_gpu(filepath)
-    hist_q8_gpu, arr_q8_gpu, t_q8_gpu = None,None,zeros #query8_gpu(filepath)
-    #hist_q8_gpu, arr_q8_gpu, t_q8_gpu = query8_gpu(filepath)
+    hist_q8_gpu, arr_q8_gpu, t_q8_gpu = query8_gpu(filepath)
+    #exit()
 
     # Run the benchmark queries on CPU
     hist_q1_cpu,   arr_q1_cpu, t_q1_cpu = query1_cpu(filepath)
@@ -1372,25 +1374,24 @@ def main():
     hist_q6p1_cpu, hist_q6p2_cpu, arr_q6p1_cpu, arr_q6p2_cpu, t_q6_cpu = query6_cpu(filepath)
     hist_q7_cpu,   arr_q7_cpu, t_q7_cpu = query7_cpu(filepath)
     hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = query8_cpu(filepath)
-    #hist_q8_cpu,   arr_q8_cpu, t_q8_cpu = None,None,zeros
     #exit()
 
     # Check for event-by-event agreement of the output arrays
     print(f"\n\n########### Check event-by-event agreement of the output arrays ###########\n")
-    print("q1:",arrays_agree(arr_q1_gpu,arr_q1_cpu,"q1"),"\n")
-    print("q2:",arrays_agree(arr_q2_gpu,arr_q2_cpu,"q2"),"\n")
-    print("q3:",arrays_agree(arr_q3_gpu,arr_q3_cpu,"q3"),"\n")
-    print("q4:",arrays_agree(arr_q4_gpu,arr_q4_cpu,"q4"),"\n")
-    print("q5:",arrays_agree(arr_q5_gpu,arr_q5_cpu,"q5"),"\n")
-    print("q6:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu,"q6p1"),"\n")
-    print("q6:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu,"q6p2"),"\n")
-    print("q7:",arrays_agree(arr_q7_gpu,arr_q7_cpu,"q7"),"\n")
-    #print("q8:",arrays_agree(arr_q8_gpu,arr_q8_cpu,"q8"),"\n")
+    print("q1 largest difference:",arrays_agree(arr_q1_gpu,arr_q1_cpu,"q1"),"\n")
+    print("q2 largest difference:",arrays_agree(arr_q2_gpu,arr_q2_cpu,"q2"),"\n")
+    print("q3 largest difference:",arrays_agree(arr_q3_gpu,arr_q3_cpu,"q3"),"\n")
+    print("q4 largest difference:",arrays_agree(arr_q4_gpu,arr_q4_cpu,"q4"),"\n")
+    print("q5 largest difference:",arrays_agree(arr_q5_gpu,arr_q5_cpu,"q5"),"\n")
+    print("q6 largest difference:",arrays_agree(arr_q6p1_gpu,arr_q6p1_cpu,"q6p1"),"\n")
+    print("q6 largest difference:",arrays_agree(arr_q6p2_gpu,arr_q6p2_cpu,"q6p2"),"\n")
+    print("q7 largest difference:",arrays_agree(arr_q7_gpu,arr_q7_cpu,"q7"),"\n")
+    print("q8 largest difference:",arrays_agree(arr_q8_gpu,arr_q8_cpu,"q8"),"\n")
     #exit()
 
     # Print the times in a way we can easily paste as the plotting inputs
-    print(f"\n\n########### Timing info for this run over {nevents} events ###########\n")
-    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_gpu,t_q7_gpu,        ]},")
+    print(f"\n\n########### Timing info for this run over {nevents} events (for plotting) ###########\n")
+    print(f"gpu:\n{[t_q1_gpu,t_q2_gpu,t_q3_gpu,t_q4_gpu,t_q5_gpu,t_q6_gpu,t_q7_gpu,t_q8_gpu]},")
     print(f"cpu:\n{[t_q1_cpu,t_q2_cpu,t_q3_cpu,t_q4_cpu,t_q5_cpu,t_q6_cpu,t_q7_cpu,t_q8_cpu]},")
     #exit()
 
